@@ -66,6 +66,15 @@ export function formatDateTime(value) {
   }
 }
 
+export function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 export function createId() {
   if (globalThis.crypto?.randomUUID) {
     return globalThis.crypto.randomUUID();
@@ -133,7 +142,7 @@ export function downloadJson(filename, data) {
   anchor.click();
   setTimeout(() => {
     URL.revokeObjectURL(url);
-  }, 0);
+  }, 100);
 }
 
 export function readTextFile(file) {

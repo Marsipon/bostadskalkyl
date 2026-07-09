@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import lzStringPackage from 'lz-string';
 
-import { decodeShareState, encodeShareState, formatIntegerInput, parseIntegerInput, parsePercentInput } from '../utils.js';
+import { decodeShareState, encodeShareState, escapeHtml, formatIntegerInput, parseIntegerInput, parsePercentInput } from '../utils.js';
 
 globalThis.LZString = lzStringPackage;
 
@@ -60,4 +60,8 @@ test('numeric helpers sanitize and format currency-like inputs', () => {
   assert.equal(parseIntegerInput('5 200 000'), 5200000);
   assert.equal(parsePercentInput('3,5'), 3.5);
   assert.equal(formatIntegerInput(5200000), '5 200 000');
+});
+
+test('escapeHtml escapes user-controlled text for template rendering', () => {
+  assert.equal(escapeHtml(`"><script>alert('x')</script>`), '&quot;&gt;&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;');
 });

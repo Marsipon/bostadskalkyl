@@ -1,5 +1,5 @@
 import { APP_NAME } from './constants.js';
-import { formatCurrency, formatDateTime, formatIntegerInput, formatLoanToValue, formatPercentInput } from './utils.js';
+import { escapeHtml, formatCurrency, formatDateTime, formatIntegerInput, formatLoanToValue, formatPercentInput } from './utils.js';
 
 function renderMetric(label, value) {
   return `
@@ -11,46 +11,52 @@ function renderMetric(label, value) {
 }
 
 function renderField({ id, label, value, hint = '', field, inputMode = 'numeric' }) {
+  const safeId = escapeHtml(id);
+  const safeHintId = `${safeId}-hint`;
+
   return `
-    <label class="field" for="${id}">
-      <span class="field__label">${label}</span>
+    <label class="field" for="${safeId}">
+      <span class="field__label">${escapeHtml(label)}</span>
       <input
         class="field__input js-number-input"
-        id="${id}"
-        name="${id}"
+        id="${safeId}"
+        name="${safeId}"
         type="text"
         inputmode="${inputMode}"
         autocomplete="off"
         placeholder="0"
         value="${formatIntegerInput(value)}"
-        data-field="${field}"
-        aria-describedby="${hint ? `${id}-hint` : ''}"
+        data-field="${escapeHtml(field)}"
+        aria-describedby="${hint ? safeHintId : ''}"
       >
-      ${hint ? `<span class="field__hint" id="${id}-hint">${hint}</span>` : ''}
+      ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
     </label>
   `;
 }
 
 function renderPercentField({ id, label, value, field, hint = '' }) {
+  const safeId = escapeHtml(id);
+  const safeHintId = `${safeId}-hint`;
+
   return `
-    <label class="field" for="${id}">
-      <span class="field__label">${label}</span>
+    <label class="field" for="${safeId}">
+      <span class="field__label">${escapeHtml(label)}</span>
       <div class="field__percent-wrap">
         <input
           class="field__input js-percent-input"
-          id="${id}"
-          name="${id}"
+          id="${safeId}"
+          name="${safeId}"
           type="text"
           inputmode="decimal"
           autocomplete="off"
           placeholder="0"
           value="${formatPercentInput(value)}"
-          data-field="${field}"
-          aria-describedby="${hint ? `${id}-hint` : ''}"
+          data-field="${escapeHtml(field)}"
+          aria-describedby="${hint ? safeHintId : ''}"
         >
         <span class="field__suffix">%</span>
       </div>
-      ${hint ? `<span class="field__hint" id="${id}-hint">${hint}</span>` : ''}
+      ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
     </label>
   `;
 }
@@ -58,25 +64,25 @@ function renderPercentField({ id, label, value, field, hint = '' }) {
 function renderLoans(loans) {
   return loans.map((loan, index) => `
     <div class="loan-row">
-      <label class="field" for="loan-${loan.id}">
+      <label class="field" for="loan-${escapeHtml(loan.id)}">
         <span class="field__label">Lån ${index + 1}</span>
         <input
           class="field__input js-loan-input"
-          id="loan-${loan.id}"
-          name="loan-${loan.id}"
+          id="loan-${escapeHtml(loan.id)}"
+          name="loan-${escapeHtml(loan.id)}"
           type="text"
           inputmode="numeric"
           autocomplete="off"
           placeholder="0"
           value="${formatIntegerInput(loan.amount)}"
-          data-loan-id="${loan.id}"
+          data-loan-id="${escapeHtml(loan.id)}"
         >
       </label>
       <button
         class="button button--ghost button--icon"
         type="button"
         data-action="remove-loan"
-        data-loan-id="${loan.id}"
+        data-loan-id="${escapeHtml(loan.id)}"
         aria-label="Ta bort lån ${index + 1}"
       >
         ×
@@ -143,14 +149,14 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
           <div class="section-header">
             <div>
               <h2 class="section-title" id="scenarios-heading">▼ Mina kalkyler</h2>
-              <p class="section-copy">Aktiv senast uppdaterad ${formatDateTime(activeCalculation.updatedAt)}</p>
+              <p class="section-copy">Aktiv senast uppdaterad ${escapeHtml(formatDateTime(activeCalculation.updatedAt))}</p>
             </div>
           </div>
           <label class="field" for="active-calculation">
             <span class="field__label">Aktiv kalkyl</span>
             <select class="field__input field__input--select" id="active-calculation" data-action="change-calculation" aria-label="Välj aktiv kalkyl">
               ${calculations.map((calculation) => `
-                <option value="${calculation.id}" ${calculation.id === activeCalculation.id ? 'selected' : ''}>${calculation.name}</option>
+                <option value="${escapeHtml(calculation.id)}" ${calculation.id === activeCalculation.id ? 'selected' : ''}>${escapeHtml(calculation.name)}</option>
               `).join('')}
             </select>
           </label>
@@ -209,7 +215,7 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
           </div>
           <label class="field" for="share-url">
             <span class="field__label">Dela via länk</span>
-            <input class="field__input" id="share-url" value="${shareUrl}" readonly data-role="share-url" aria-label="Delningslänk">
+            <input class="field__input" id="share-url" value="${escapeHtml(shareUrl)}" readonly data-role="share-url" aria-label="Delningslänk">
           </label>
           <div class="button-row">
             <button class="button" type="button" data-action="share-calculation">📤 Dela</button>
