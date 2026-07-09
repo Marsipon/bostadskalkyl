@@ -6,6 +6,7 @@ import {
   calculateMortgage,
   calculatePantbrev,
   calculatePurchasePlan,
+  calculateSaleCosts,
   calculateScenario
 } from '../calculations.js';
 
@@ -26,6 +27,10 @@ test('calculatePantbrev only charges for deeds above existing amount', () => {
     newDeeds: 1100000,
     cost: 22375
   });
+});
+
+test('calculateSaleCosts includes broker fee, tax, and other sale costs', () => {
+  assert.equal(calculateSaleCosts(120000, 50000, 10000), 180000);
 });
 
 test('calculatePurchasePlan reports missing capital above 85 percent loan-to-value', () => {
@@ -53,8 +58,17 @@ test('calculateScenario returns explainable chain and healthy result when equity
     currentHome: {
       marketValue: 5200000,
       purchasePrice: 0,
+      originalLoan: 0,
+      purchaseDate: '',
+      renovations: 0,
+      amortizedAmount: 0,
       brokerFeePercent: 3,
       loans: [{ id: 'a', amount: 1250000 }, { id: 'b', amount: 980000 }]
+    },
+    sale: {
+      expectedPrice: 5300000,
+      tax: 50000,
+      otherCosts: 20000
     },
     newHome: {
       price: 6250000,
@@ -75,6 +89,8 @@ test('calculateScenario returns explainable chain and healthy result when equity
   assert.equal(result.status, 'good');
   assert.ok(result.capitalSurplus > 0);
   assert.ok(result.saleProceeds > 0);
-  assert.deepEqual(result.explanation.chain, ['saleProceeds', 'equity', 'downPayment', 'requiredOwnCash', 'requiredLoan', 'loanToValue']);
-  assert.equal(result.explanation.steps.saleProceeds.formula, 'Försäljningspris - bolån - mäklararvode');
+  assert.equal(result.salePrice, 5300000);
+  assert.equal(result.saleCosts, 229000);
+  assert.deepEqual(result.explanation.chain, ['saleCosts', 'saleProceeds', 'equity', 'downPayment', 'requiredOwnCash', 'requiredLoan', 'loanToValue']);
+  assert.equal(result.explanation.steps.saleProceeds.formula, 'Försäljningspris - bolån - försäljningskostnader');
 });

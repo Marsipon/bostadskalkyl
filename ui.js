@@ -42,6 +42,29 @@ function renderField({ id, label, value, hint = '', field, inputMode = 'numeric'
   `;
 }
 
+function renderTextField({ id, label, value, field, type = 'text', hint = '' }) {
+  const safeId = escapeHtml(id);
+  const safeHintId = `${safeId}-hint`;
+
+  return `
+    <label class="field" for="${safeId}">
+      <span class="field__label">${escapeHtml(label)}</span>
+      <input
+        class="field__input"
+        id="${safeId}"
+        name="${safeId}"
+        type="${escapeHtml(type)}"
+        autocomplete="off"
+        value="${escapeHtml(value)}"
+        data-field="${escapeHtml(field)}"
+        data-kind="string"
+        aria-describedby="${hint ? safeHintId : ''}"
+      >
+      ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
+    </label>
+  `;
+}
+
 function renderPercentField({ id, label, value, field, hint = '', className = 'js-percent-input' }) {
   const safeId = escapeHtml(id);
   const safeHintId = `${safeId}-hint`;
@@ -188,18 +211,14 @@ function renderPriceExplore(results) {
 }
 
 export function renderResultPanel(results) {
-  const statusText = results.status === 'short'
-    ? 'Du saknar kapital'
-    : results.status === 'tight'
-      ? 'Du ligger nära gränsen'
-      : 'Du har råd';
+  const statusText = results.status === 'short' ? '❌ NEJ' : '✅ JA';
   const amountText = results.status === 'short'
     ? formatCurrency(results.capitalMissing)
     : formatCurrency(results.capitalSurplus);
   const bodyText = results.status === 'short'
-    ? `Du behöver minst ${amountText} extra för att hålla dig inom 85 % belåningsgrad.`
+    ? `Du saknar ${amountText} för att hålla dig inom 85 % belåningsgrad.`
     : results.status === 'tight'
-      ? `Affären går ihop med ungefär ${amountText} kvar som marginal.`
+      ? `Affären går ihop med ungefär ${amountText} över.`
       : `Du får ungefär ${amountText} över efter affären.`;
 
   const chain = results.explanation?.chain ?? [];
@@ -207,7 +226,7 @@ export function renderResultPanel(results) {
 
   return `
     <section class="card result-card result-card--${results.status}" data-role="result-panel" aria-labelledby="result-heading">
-      <div class="result-card__badge">Snabbvy: Har jag råd?</div>
+      <div class="result-card__badge">Kan du köpa?</div>
       <h2 class="section-title" id="result-heading">${statusText}</h2>
       <p class="result-card__amount">${amountText}</p>
       <p class="result-card__body">${bodyText}</p>
@@ -221,7 +240,28 @@ export function renderResultPanel(results) {
   `;
 }
 
-export function renderApp({ calculations, activeCalculation, results, shareUrl }) {
+function renderSharedCalculationCard(sharedPrompt) {
+  if (!sharedPrompt) {
+    return '';
+  }
+
+  return `
+    <section class="card shared-card" aria-labelledby="shared-heading">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" id="shared-heading">Delad kalkyl</h2>
+          <p class="section-copy">${escapeHtml(sharedPrompt.name)}</p>
+        </div>
+      </div>
+      <div class="button-row button-row--two">
+        <button class="button" type="button" data-action="save-shared-calculation">Spara som min kalkyl</button>
+        <button class="button button--ghost" type="button" data-action="discard-shared-calculation">Fortsätt utan att spara</button>
+      </div>
+    </section>
+  `;
+}
+
+export function renderApp({ calculations, activeCalculation, results, shareUrl, sharedPrompt }) {
   const activeState = activeCalculation.state;
   const assumptions = activeState.assumptions;
   const priceSliderMin = results.priceExplore?.min ?? 0;
@@ -236,6 +276,8 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
       </header>
 
       <main class="app-main">
+        ${renderSharedCalculationCard(sharedPrompt)}
+
         <section class="card" aria-labelledby="scenarios-heading">
           <div class="section-header">
             <div>
@@ -271,6 +313,15 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
             ${renderField({ id: 'market-value', label: 'Marknadsvärde', value: activeState.currentHome.marketValue, field: 'currentHome.marketValue' })}
             ${renderField({ id: 'purchase-price', label: 'Inköpspris (valfritt)', value: activeState.currentHome.purchasePrice, field: 'currentHome.purchasePrice' })}
           </div>
+          <details class="details">
+            <summary>Visa historiska värden</summary>
+            <div class="field-stack">
+              ${renderField({ id: 'original-loan', label: 'Ursprungligt lån', value: activeState.currentHome.originalLoan, field: 'currentHome.originalLoan' })}
+              ${renderTextField({ id: 'purchase-date', label: 'Inköpsdatum', value: activeState.currentHome.purchaseDate, field: 'currentHome.purchaseDate', type: 'date' })}
+              ${renderField({ id: 'renovations', label: 'Renoveringar', value: activeState.currentHome.renovations, field: 'currentHome.renovations' })}
+              ${renderField({ id: 'amortized-amount', label: 'Amorterat belopp', value: activeState.currentHome.amortizedAmount, field: 'currentHome.amortizedAmount' })}
+            </div>
+          </details>
           <div class="section-header section-header--tight">
             <h3 class="subsection-title">Bolån</h3>
             <p class="loan-total">Totalt: <strong data-role="loan-total">${formatCurrency(results.totalMortgage)}</strong></p>
@@ -279,6 +330,25 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
             ${renderLoans(activeState.currentHome.loans)}
           </div>
           <button class="button button--ghost button--full" type="button" data-action="add-loan">+ Lägg till lån</button>
+        </section>
+
+        <section class="card" aria-labelledby="sale-heading">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title" id="sale-heading">Försäljning</h2>
+              <p class="section-copy">Ange vad du tror att nuvarande bostad säljs för och vilka kostnader som tillkommer.</p>
+            </div>
+          </div>
+          <div class="field-stack">
+            ${renderField({ id: 'sale-price', label: 'Förväntat försäljningspris', value: activeState.sale.expectedPrice, field: 'sale.expectedPrice' })}
+            ${renderField({ id: 'sale-tax', label: 'Eventuell skatt', value: activeState.sale.tax, field: 'sale.tax' })}
+            ${renderField({ id: 'sale-other-costs', label: 'Övriga kostnader', value: activeState.sale.otherCosts, field: 'sale.otherCosts' })}
+          </div>
+          <dl class="metric-list">
+            ${renderMetric('Mäklararvode', formatCurrency(results.brokerFee))}
+            ${renderMetric('Försäljningskostnader totalt', formatCurrency(results.saleCosts))}
+            ${renderMetric('Tillgängligt kapital', formatCurrency(results.saleProceeds))}
+          </dl>
         </section>
 
         <section class="card" aria-labelledby="new-home-heading">
@@ -320,15 +390,15 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
           <div class="field-stack">
             ${renderPercentField({ id: 'down-payment-percent', label: 'Kontantinsats', value: assumptions.downPaymentPercent, field: 'assumptions.downPaymentPercent' })}
             <label class="field" for="down-payment-slider">
-              <span class="field__label">Kontantinsats-reglage (15–30 %)</span>
+              <span class="field__label">Kontantinsats-reglage (10–50 %)</span>
               <input
                 class="field__range js-percent-range"
                 id="down-payment-slider"
                 type="range"
-                min="15"
-                max="30"
+                min="10"
+                max="50"
                 step="0.5"
-                value="${Math.min(Math.max(assumptions.downPaymentPercent, 15), 30)}"
+                value="${Math.min(Math.max(assumptions.downPaymentPercent, 10), 50)}"
                 data-field="assumptions.downPaymentPercent"
               >
             </label>

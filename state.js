@@ -41,8 +41,17 @@ export function createEmptyState() {
     currentHome: {
       marketValue: 0,
       purchasePrice: 0,
+      originalLoan: 0,
+      purchaseDate: '',
+      renovations: 0,
+      amortizedAmount: 0,
       brokerFeePercent: DEFAULT_BROKER_FEE_RATE,
       loans: [{ id: createId(), amount: 0 }]
+    },
+    sale: {
+      expectedPrice: 0,
+      tax: 0,
+      otherCosts: 0
     },
     newHome: {
       price: 0,
@@ -92,14 +101,24 @@ export function ensureStore(store) {
         };
 
         const currentHome = calculation.state?.currentHome ?? {};
+        const sale = calculation.state?.sale ?? {};
         const newHome = calculation.state?.newHome ?? {};
         const assumptions = calculation.state?.assumptions ?? {};
         safeCalculation.state.currentHome.marketValue = Number(currentHome.marketValue) || 0;
         safeCalculation.state.currentHome.purchasePrice = Number(currentHome.purchasePrice) || 0;
+        safeCalculation.state.currentHome.originalLoan = Number(currentHome.originalLoan) || 0;
+        safeCalculation.state.currentHome.purchaseDate = typeof currentHome.purchaseDate === 'string'
+          ? currentHome.purchaseDate
+          : '';
+        safeCalculation.state.currentHome.renovations = Number(currentHome.renovations) || 0;
+        safeCalculation.state.currentHome.amortizedAmount = Number(currentHome.amortizedAmount) || 0;
         safeCalculation.state.currentHome.brokerFeePercent = Number(currentHome.brokerFeePercent) || DEFAULT_BROKER_FEE_RATE;
         safeCalculation.state.currentHome.loans = Array.isArray(currentHome.loans) && currentHome.loans.length
           ? currentHome.loans.map((loan) => ({ id: loan.id || createId(), amount: Number(loan.amount) || 0 }))
           : [{ id: createId(), amount: 0 }];
+        safeCalculation.state.sale.expectedPrice = Number(sale.expectedPrice) || safeCalculation.state.currentHome.marketValue || 0;
+        safeCalculation.state.sale.tax = Number(sale.tax) || 0;
+        safeCalculation.state.sale.otherCosts = Number(sale.otherCosts) || 0;
         safeCalculation.state.newHome.price = Number(newHome.price) || 0;
         safeCalculation.state.newHome.existingDeeds = Number(newHome.existingDeeds) || 0;
         safeCalculation.state.newHome.renovationCost = Number(newHome.renovationCost) || 0;
