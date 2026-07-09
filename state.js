@@ -6,7 +6,11 @@ function now() {
 }
 
 function clone(value) {
-  return structuredClone(value);
+  if (typeof globalThis.structuredClone === 'function') {
+    return globalThis.structuredClone(value);
+  }
+
+  return JSON.parse(JSON.stringify(value));
 }
 
 export function createEmptyState() {

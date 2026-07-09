@@ -27,7 +27,9 @@ import {
 } from './utils.js';
 
 const root = document.querySelector('#app');
+const PERSIST_DELAY_MS = 250;
 let store = bootstrapStore();
+let persistTimeoutId = null;
 
 function getActiveScenario() {
   return getActiveCalculation(store);
@@ -56,10 +58,32 @@ function syncHash() {
   history.replaceState(null, '', url);
 }
 
+function clearPendingPersist() {
+  if (persistTimeoutId !== null) {
+    window.clearTimeout(persistTimeoutId);
+    persistTimeoutId = null;
+  }
+}
+
 function persistStore() {
+  clearPendingPersist();
   store = ensureStore(store);
   saveStore(store);
   syncHash();
+}
+
+function schedulePersist() {
+  clearPendingPersist();
+  persistTimeoutId = window.setTimeout(() => {
+    persistTimeoutId = null;
+    persistStore();
+  }, PERSIST_DELAY_MS);
+}
+
+function flushPendingPersist() {
+  if (persistTimeoutId !== null) {
+    persistStore();
+  }
 }
 
 function announce(message) {
@@ -148,7 +172,7 @@ function updateNumberField(target) {
   const value = parseIntegerInput(target.value);
   target.value = value > 0 ? new Intl.NumberFormat('sv-SE').format(value) : '';
   store = updateField(store, activeCalculation.id, section, field, value);
-  persistStore();
+  schedulePersist();
   refreshDynamicSections();
 }
 
@@ -157,7 +181,7 @@ function updatePercentField(target) {
   const [section, field] = target.dataset.field.split('.');
   const value = parsePercentInput(target.value);
   store = updateField(store, activeCalculation.id, section, field, value);
-  persistStore();
+  schedulePersist();
   refreshDynamicSections();
 }
 
@@ -166,7 +190,7 @@ function updateLoanField(target) {
   const value = parseIntegerInput(target.value);
   target.value = value > 0 ? new Intl.NumberFormat('sv-SE').format(value) : '';
   store = updateLoan(store, activeCalculation.id, target.dataset.loanId, value);
-  persistStore();
+  schedulePersist();
   refreshDynamicSections();
 }
 
@@ -276,6 +300,10 @@ root.addEventListener('input', (event) => {
   if (target.classList.contains('js-loan-input')) {
     updateLoanField(target);
   }
+});
+
+window.addEventListener('pagehide', () => {
+  flushPendingPersist();
 });
 
 if ('serviceWorker' in navigator) {

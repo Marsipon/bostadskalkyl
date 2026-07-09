@@ -89,7 +89,14 @@ function encodeBase64(value) {
     return Buffer.from(value).toString('base64');
   }
 
-  return btoa(String.fromCharCode(...value));
+  let binary = '';
+  const chunkSize = 0x8000;
+
+  for (let index = 0; index < value.length; index += chunkSize) {
+    binary += String.fromCharCode(...value.subarray(index, index + chunkSize));
+  }
+
+  return btoa(binary);
 }
 
 function decodeBase64(value) {
@@ -124,7 +131,9 @@ export function downloadJson(filename, data) {
   anchor.href = url;
   anchor.download = filename;
   anchor.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 0);
 }
 
 export function readTextFile(file) {
