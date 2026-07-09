@@ -11,8 +11,18 @@ test('share state round-trips via lz-string and base64url', () => {
     calculation: {
       name: 'Villa',
       state: {
-        currentHome: { marketValue: 5200000, purchasePrice: 0, brokerFeePercent: 3, loans: [{ id: '1', amount: 2200000 }] },
-        newHome: { price: 6250000, existingDeeds: 0, renovationCost: 100000, otherCosts: 50000 }
+      currentHome: {
+        marketValue: 5200000,
+        purchasePrice: 0,
+        originalLoan: 0,
+        purchaseDate: '',
+        renovations: 0,
+        amortizedAmount: 0,
+        brokerFeePercent: 3,
+        loans: [{ id: '1', amount: 2200000 }]
+      },
+      sale: { expectedPrice: 5200000, tax: 0, otherCosts: 0 },
+      newHome: { price: 6250000, existingDeeds: 0, renovationCost: 100000, otherCosts: 50000 }
       }
     }
   };
@@ -31,11 +41,20 @@ test('share state encoding also works without Buffer for large payloads', () => 
         currentHome: {
           marketValue: 5200000,
           purchasePrice: 0,
+          originalLoan: 0,
+          purchaseDate: '',
+          renovations: 0,
+          amortizedAmount: 0,
           brokerFeePercent: 3.5,
           loans: Array.from({ length: 12000 }, (_, index) => ({
             id: `loan-${index}`,
             amount: 100000 + index
           }))
+        },
+        sale: {
+          expectedPrice: 5200000,
+          tax: 0,
+          otherCosts: 0
         },
         newHome: {
           price: 6250000,

@@ -1,6 +1,6 @@
 # Bostadskalkyl
 
-Bostadskalkyl är en helt statisk, mobile-first webbapp för att räkna på köp och försäljning av bostäder i Sverige. All data stannar i webbläsaren och appen kan hostas gratis på GitHub Pages.
+Bostadskalkyl är en interaktiv bostadsbyteskalkylator – en helt statisk, mobile-first webbapp för att förstå ekonomin vid köp och försäljning av bostäder i Sverige. Med transparenta beräkningar och pedagogiska förklaringar ger appen användaren svar på viktiga frågor: Har jag råd? Hur mycket behöver jag? Hur påverkas ekonomin om priset ändras? All data stannar i webbläsaren och appen kan hostas gratis på GitHub Pages.
 
 ## Funktioner
 
@@ -11,9 +11,13 @@ Bostadskalkyl är en helt statisk, mobile-first webbapp för att räkna på köp
 - redigerbara antaganden (kontantinsats, lagfart, pantbrev, mäklarregel)
 - prisreglage, kontantinsatsreglage och läge för att utforska möjliga prisnivåer
 - dela aktivt scenario via komprimerad URL-hash
-- export/import av `calc.json`
+- export/import av `bostadskalkyl.json`
 - mobilförst layout utan horisontell scroll
 - rena beräkningsfunktioner i separata moduler
+
+## Kravspecifikation
+
+Se [KRAVSPECIFIKATION.md](KRAVSPECIFIKATION.md) för komplett produktdokumentation, arkitektur, UX-principer och framtida funktioner.
 
 ## Projektstruktur
 

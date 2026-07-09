@@ -76,9 +76,13 @@ export function calculateEquity(marketValue, totalMortgage) {
   return roundCurrency(sanitizeNumber(marketValue) - sanitizeNumber(totalMortgage));
 }
 
-export function calculateSaleProceeds(marketValue, totalMortgage, brokerFee) {
+export function calculateSaleCosts(brokerFee, saleTax = 0, otherCosts = 0) {
+  return roundCurrency(sanitizeNumber(brokerFee) + sanitizeNumber(saleTax) + sanitizeNumber(otherCosts));
+}
+
+export function calculateSaleProceeds(marketValue, totalMortgage, saleCosts) {
   return roundCurrency(
-    sanitizeNumber(marketValue) - sanitizeNumber(totalMortgage) - sanitizeNumber(brokerFee)
+    sanitizeNumber(marketValue) - sanitizeNumber(totalMortgage) - sanitizeNumber(saleCosts)
   );
 }
 
@@ -96,12 +100,15 @@ export function calculateBrokerNet(
   marketValue,
   totalMortgage,
   brokerFeePercent,
+  saleTax = 0,
+  saleOtherCosts = 0,
   brokerFeeMode = DEFAULT_BROKER_FEE_MODE,
   brokerFeeFixed = DEFAULT_BROKER_FEE_FIXED
 ) {
   const brokerFee = calculateBrokerFee(marketValue, brokerFeePercent, brokerFeeMode, brokerFeeFixed);
-  const saleProceeds = calculateSaleProceeds(marketValue, totalMortgage, brokerFee);
-  return { brokerFee, saleProceeds };
+  const saleCosts = calculateSaleCosts(brokerFee, saleTax, saleOtherCosts);
+  const saleProceeds = calculateSaleProceeds(marketValue, totalMortgage, saleCosts);
+  return { brokerFee, saleCosts, saleProceeds };
 }
 
 export function calculatePantbrev(requiredLoan, existingDeeds, deedPercent = DEFAULT_DEED_PERCENT) {
@@ -328,18 +335,24 @@ export function calculatePurchasePlan({
 
 export function calculateScenario(state) {
   const currentHome = state?.currentHome ?? {};
+  const sale = state?.sale ?? {};
   const newHome = state?.newHome ?? {};
   const assumptions = state?.assumptions ?? {};
   const brokerFeeMode = assumptions.brokerFeeMode === 'fixed' ? 'fixed' : 'percent';
   const brokerFeePercent = sanitizeNumber(assumptions.brokerFeePercent) || sanitizeNumber(currentHome.brokerFeePercent) || DEFAULT_BROKER_FEE_RATE;
   const brokerFeeFixed = sanitizeNumber(assumptions.brokerFeeFixed) || DEFAULT_BROKER_FEE_FIXED;
+  const salePrice = sanitizeNumber(sale.expectedPrice) || sanitizeNumber(currentHome.marketValue);
+  const saleTax = sanitizeNumber(sale.tax);
+  const saleOtherCosts = sanitizeNumber(sale.otherCosts);
 
   const totalMortgage = calculateMortgage(currentHome.loans);
   const equity = calculateEquity(currentHome.marketValue, totalMortgage);
-  const { brokerFee, saleProceeds } = calculateBrokerNet(
-    currentHome.marketValue,
+  const { brokerFee, saleCosts, saleProceeds } = calculateBrokerNet(
+    salePrice,
     totalMortgage,
     brokerFeePercent,
+    saleTax,
+    saleOtherCosts,
     brokerFeeMode,
     brokerFeeFixed
   );
@@ -368,11 +381,27 @@ export function calculateScenario(state) {
       id: 'saleProceeds',
       title: 'Likvid efter försäljning',
       value: saleProceeds,
-      formula: 'Försäljningspris - bolån - mäklararvode',
+      formula: 'Försäljningspris - bolån - försäljningskostnader',
       inputs: [
-        { name: 'Försäljningspris', value: sanitizeNumber(currentHome.marketValue), operator: '=' },
+        { name: 'Försäljningspris', value: salePrice, operator: '=' },
         { name: 'Totalt bolån idag', value: totalMortgage, operator: '-' },
-        { name: 'Mäklararvode', value: brokerFee, operator: '-' }
+        { name: 'Försäljningskostnader', value: saleCosts, operator: '-' }
+      ],
+      assumptions: [
+        brokerFeeMode === 'fixed'
+          ? { label: 'Mäklararvode (fast)', value: brokerFeeFixed }
+          : { label: 'Mäklararvode', value: brokerFeePercent, unit: '%' }
+      ]
+    }),
+    saleCosts: createExplanation({
+      id: 'saleCosts',
+      title: 'Försäljningskostnader',
+      value: saleCosts,
+      formula: 'Mäklararvode + skatt + övriga försäljningskostnader',
+      inputs: [
+        { name: 'Mäklararvode', value: brokerFee, operator: '=' },
+        { name: 'Skatt', value: saleTax, operator: '+' },
+        { name: 'Övriga kostnader', value: saleOtherCosts, operator: '+' }
       ],
       assumptions: [
         brokerFeeMode === 'fixed'
@@ -388,7 +417,7 @@ export function calculateScenario(state) {
       inputs: brokerFeeMode === 'fixed'
         ? [{ name: 'Fast arvode', value: brokerFeeFixed, operator: '=' }]
         : [
-          { name: 'Försäljningspris', value: sanitizeNumber(currentHome.marketValue), operator: '=' },
+          { name: 'Försäljningspris', value: salePrice, operator: '=' },
           { name: 'Mäklararvode', value: brokerFeePercent, unit: '%', operator: '×' }
         ],
       assumptions: [{ label: 'Regel', value: brokerFeeMode === 'fixed' ? 'Fast belopp' : 'Procent av försäljningspris' }]
@@ -397,9 +426,11 @@ export function calculateScenario(state) {
   };
 
   return {
+    salePrice,
     totalMortgage,
     equity,
     brokerFee,
+    saleCosts,
     saleProceeds,
     ...purchasePlan,
     explanation: {
@@ -411,7 +442,7 @@ export function calculateScenario(state) {
         brokerFeePercent,
         brokerFeeFixed
       },
-      chain: ['saleProceeds', 'equity', 'downPayment', 'requiredOwnCash', 'requiredLoan', 'loanToValue'],
+      chain: ['saleCosts', 'saleProceeds', 'equity', 'downPayment', 'requiredOwnCash', 'requiredLoan', 'loanToValue'],
       steps: explanations
     }
   };

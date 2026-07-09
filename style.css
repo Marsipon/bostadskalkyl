@@ -258,6 +258,10 @@ summary:focus {
   margin-top: 1rem;
 }
 
+.button-row--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .button {
   display: inline-flex;
   justify-content: center;
@@ -311,6 +315,11 @@ summary:focus {
   align-items: end;
 }
 
+.shared-card {
+  border-color: rgba(29, 78, 216, 0.25);
+  background: var(--surface-muted);
+}
+
 .action-bar {
   position: sticky;
   bottom: 0.75rem;
@@ -334,6 +343,7 @@ summary:focus {
 
 @media (max-width: 35rem) {
   .button-row,
+  .button-row--two,
   .action-bar {
     grid-template-columns: 1fr;
   }

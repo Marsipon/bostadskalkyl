@@ -28,6 +28,8 @@ test('createEmptyState includes editable assumptions', () => {
   assert.equal(state.assumptions.stampDutyPercent, 1.5);
   assert.equal(state.assumptions.deedPercent, 2);
   assert.equal(state.assumptions.brokerFeeMode, 'percent');
+  assert.equal(state.sale.tax, 0);
+  assert.equal(state.currentHome.purchaseDate, '');
 });
 
 test('ensureStore migrates old broker fee into assumptions', () => {
@@ -58,4 +60,5 @@ test('ensureStore migrates old broker fee into assumptions', () => {
   });
 
   assert.equal(store.calculations.a.state.assumptions.brokerFeePercent, 2.5);
+  assert.equal(store.calculations.a.state.sale.expectedPrice, 100);
 });

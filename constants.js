@@ -1,6 +1,6 @@
 export const APP_NAME = 'Bostadskalkyl';
 export const STORAGE_KEY = 'bostadskalkyl-store';
-export const STORAGE_VERSION = 1;
+export const STORAGE_VERSION = 2;
 
 export const DEFAULT_BROKER_FEE_RATE = 3;
 export const DEFAULT_DOWN_PAYMENT_PERCENT = 15;

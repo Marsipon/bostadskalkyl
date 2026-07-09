@@ -27,7 +27,9 @@ import {
 
 const root = document.querySelector('#app');
 const PERSIST_DELAY_MS = 250;
-let store = bootstrapStore();
+const bootstrapState = bootstrapStore();
+let store = bootstrapState.store;
+let sharedPrompt = bootstrapState.sharedPrompt;
 let persistTimeoutId = null;
 
 function getActiveScenario() {
@@ -67,7 +69,9 @@ function clearPendingPersist() {
 function persistStore() {
   clearPendingPersist();
   store = ensureStore(store);
-  saveStore(store);
+  if (!sharedPrompt) {
+    saveStore(store);
+  }
   syncHash();
 }
 
@@ -99,7 +103,8 @@ function render() {
     calculations: Object.values(store.calculations).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
     activeCalculation,
     results,
-    shareUrl: getShareUrl()
+    shareUrl: getShareUrl(),
+    sharedPrompt
   });
   document.title = `${activeCalculation.name} • Bostadskalkyl`;
 }
@@ -110,13 +115,25 @@ function bootstrapStore() {
   try {
     const payload = decodeShareState(window.location.hash.replace(/^#/, ''));
     if (payload) {
-      return importCalculation(initialStore, payload);
+      const importedStore = importCalculation(initialStore, payload);
+      const importedCalculation = getActiveCalculation(importedStore);
+      return {
+        store: importedStore,
+        sharedPrompt: {
+          importedCalculationId: importedCalculation.id,
+          name: importedCalculation.name,
+          previousStore: ensureStore(initialStore)
+        }
+      };
     }
   } catch {
     // Ignore invalid shared links and continue with local state.
   }
 
-  return ensureStore(initialStore);
+  return {
+    store: ensureStore(initialStore),
+    sharedPrompt: null
+  };
 }
 
 async function importFromFile(file) {
@@ -124,6 +141,9 @@ async function importFromFile(file) {
   const parsed = JSON.parse(text);
   store = importCalculation(store, parsed);
   persistStore();
+  if (sharedPrompt) {
+    syncHash();
+  }
   render();
   announce('Kalkylen importerades.');
 }
@@ -139,7 +159,7 @@ function exportCalculation() {
     ...getSharePayload(),
     exportedAt: new Date().toISOString()
   };
-  downloadJson('calc.json', payload);
+  downloadJson('bostadskalkyl.json', payload);
   announce('Kalkylen exporterades som JSON.');
 }
 
@@ -226,6 +246,21 @@ root.addEventListener('click', async (event) => {
       case 'share-calculation':
         await shareCalculation();
         break;
+      case 'save-shared-calculation':
+        sharedPrompt = null;
+        persistStore();
+        render();
+        announce('Den delade kalkylen sparades bland dina kalkyler.');
+        break;
+      case 'discard-shared-calculation':
+        if (sharedPrompt) {
+          store = ensureStore(sharedPrompt.previousStore);
+          sharedPrompt = null;
+          persistStore();
+          render();
+          announce('Du fortsätter utan att spara den delade kalkylen.');
+        }
+        break;
       case 'export-calculation':
         exportCalculation();
         break;
@@ -251,6 +286,11 @@ root.addEventListener('change', async (event) => {
   }
 
   if (target instanceof HTMLSelectElement && target.dataset.field && target.dataset.kind === 'string') {
+    updateValueField(target.dataset.field, target.value);
+    return;
+  }
+
+  if (target instanceof HTMLInputElement && target.dataset.field && target.dataset.kind === 'string') {
     updateValueField(target.dataset.field, target.value);
     return;
   }
