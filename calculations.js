@@ -383,9 +383,9 @@ export function calculateScenario(state) {
       value: saleProceeds,
       formula: 'Försäljningspris - bolån - försäljningskostnader',
       inputs: [
-       { name: 'Försäljningspris', value: salePrice, operator: '=' },
+        { name: 'Försäljningspris', value: salePrice, operator: '=' },
         { name: 'Totalt bolån idag', value: totalMortgage, operator: '-' },
-       { name: 'Försäljningskostnader', value: saleCosts, operator: '-' }
+        { name: 'Försäljningskostnader', value: saleCosts, operator: '-' }
       ],
       assumptions: [
         brokerFeeMode === 'fixed'
@@ -399,14 +399,14 @@ export function calculateScenario(state) {
       value: saleCosts,
       formula: 'Mäklararvode + skatt + övriga försäljningskostnader',
       inputs: [
-       { name: 'Mäklararvode', value: brokerFee, operator: '=' },
-       { name: 'Skatt', value: saleTax, operator: '+' },
-       { name: 'Övriga kostnader', value: saleOtherCosts, operator: '+' }
+        { name: 'Mäklararvode', value: brokerFee, operator: '=' },
+        { name: 'Skatt', value: saleTax, operator: '+' },
+        { name: 'Övriga kostnader', value: saleOtherCosts, operator: '+' }
       ],
       assumptions: [
-       brokerFeeMode === 'fixed'
-         ? { label: 'Mäklararvode (fast)', value: brokerFeeFixed }
-         : { label: 'Mäklararvode', value: brokerFeePercent, unit: '%' }
+        brokerFeeMode === 'fixed'
+          ? { label: 'Mäklararvode (fast)', value: brokerFeeFixed }
+          : { label: 'Mäklararvode', value: brokerFeePercent, unit: '%' }
       ]
     }),
     brokerFee: createExplanation({
@@ -415,11 +415,11 @@ export function calculateScenario(state) {
       value: brokerFee,
       formula: brokerFeeMode === 'fixed' ? 'Fast arvode' : 'Försäljningspris × mäklararvode %',
       inputs: brokerFeeMode === 'fixed'
-       ? [{ name: 'Fast arvode', value: brokerFeeFixed, operator: '=' }]
-       : [
-         { name: 'Försäljningspris', value: salePrice, operator: '=' },
-         { name: 'Mäklararvode', value: brokerFeePercent, unit: '%', operator: '×' }
-       ],
+        ? [{ name: 'Fast arvode', value: brokerFeeFixed, operator: '=' }]
+        : [
+          { name: 'Försäljningspris', value: salePrice, operator: '=' },
+          { name: 'Mäklararvode', value: brokerFeePercent, unit: '%', operator: '×' }
+        ],
       assumptions: [{ label: 'Regel', value: brokerFeeMode === 'fixed' ? 'Fast belopp' : 'Procent av försäljningspris' }]
     }),
     ...purchasePlan.explanations
