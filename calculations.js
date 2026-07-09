@@ -76,8 +76,8 @@ export function calculateEquity(marketValue, totalMortgage) {
   return roundCurrency(sanitizeNumber(marketValue) - sanitizeNumber(totalMortgage));
 }
 
-export function calculateSaleCosts(brokerFee, tax = 0, otherCosts = 0) {
-  return roundCurrency(sanitizeNumber(brokerFee) + sanitizeNumber(tax) + sanitizeNumber(otherCosts));
+export function calculateSaleCosts(brokerFee, saleTax = 0, otherCosts = 0) {
+  return roundCurrency(sanitizeNumber(brokerFee) + sanitizeNumber(saleTax) + sanitizeNumber(otherCosts));
 }
 
 export function calculateSaleProceeds(marketValue, totalMortgage, saleCosts) {
