@@ -14,13 +14,12 @@ import {
   updateField,
   updateLoan
 } from './state.js';
-import { renderApp, renderResultPanel } from './ui.js';
+import { renderApp } from './ui.js';
 import {
   copyText,
   decodeShareState,
   downloadJson,
   encodeShareState,
-  formatCurrency,
   parseIntegerInput,
   parsePercentInput,
   readTextFile
@@ -93,28 +92,6 @@ function announce(message) {
   }
 }
 
-function refreshDynamicSections() {
-  const activeCalculation = getActiveScenario();
-  const results = calculateScenario(activeCalculation.state);
-  const resultPanel = root.querySelector('[data-role="result-panel"]');
-  const shareUrl = root.querySelector('[data-role="share-url"]');
-  const loanTotal = root.querySelector('[data-role="loan-total"]');
-
-  if (resultPanel) {
-    resultPanel.outerHTML = renderResultPanel(results);
-  }
-
-  if (shareUrl) {
-    shareUrl.value = getShareUrl();
-  }
-
-  if (loanTotal) {
-    loanTotal.textContent = formatCurrency(results.totalMortgage);
-  }
-
-  document.title = `${activeCalculation.name} • Bostadskalkyl`;
-}
-
 function render() {
   const activeCalculation = getActiveScenario();
   const results = calculateScenario(activeCalculation.state);
@@ -166,23 +143,23 @@ function exportCalculation() {
   announce('Kalkylen exporterades som JSON.');
 }
 
-function updateNumberField(target) {
+function updateValueField(fieldPath, value) {
   const activeCalculation = getActiveScenario();
-  const [section, field] = target.dataset.field.split('.');
-  const value = parseIntegerInput(target.value);
-  target.value = value > 0 ? new Intl.NumberFormat('sv-SE').format(value) : '';
+  const [section, field] = fieldPath.split('.');
   store = updateField(store, activeCalculation.id, section, field, value);
   schedulePersist();
-  refreshDynamicSections();
+  render();
+}
+
+function updateNumberField(target) {
+  const value = parseIntegerInput(target.value);
+  target.value = value > 0 ? new Intl.NumberFormat('sv-SE').format(value) : '';
+  updateValueField(target.dataset.field, value);
 }
 
 function updatePercentField(target) {
-  const activeCalculation = getActiveScenario();
-  const [section, field] = target.dataset.field.split('.');
   const value = parsePercentInput(target.value);
-  store = updateField(store, activeCalculation.id, section, field, value);
-  schedulePersist();
-  refreshDynamicSections();
+  updateValueField(target.dataset.field, value);
 }
 
 function updateLoanField(target) {
@@ -191,7 +168,7 @@ function updateLoanField(target) {
   target.value = value > 0 ? new Intl.NumberFormat('sv-SE').format(value) : '';
   store = updateLoan(store, activeCalculation.id, target.dataset.loanId, value);
   schedulePersist();
-  refreshDynamicSections();
+  render();
 }
 
 root.addEventListener('click', async (event) => {
@@ -273,6 +250,11 @@ root.addEventListener('change', async (event) => {
     return;
   }
 
+  if (target instanceof HTMLSelectElement && target.dataset.field && target.dataset.kind === 'string') {
+    updateValueField(target.dataset.field, target.value);
+    return;
+  }
+
   if (target instanceof HTMLInputElement && target.type === 'file' && target.files?.[0]) {
     try {
       await importFromFile(target.files[0]);
@@ -299,6 +281,14 @@ root.addEventListener('input', (event) => {
 
   if (target.classList.contains('js-loan-input')) {
     updateLoanField(target);
+  }
+
+  if (target.classList.contains('js-range-input')) {
+    updateValueField(target.dataset.field, parseIntegerInput(target.value));
+  }
+
+  if (target.classList.contains('js-percent-range')) {
+    updateValueField(target.dataset.field, parsePercentInput(target.value));
   }
 });
 

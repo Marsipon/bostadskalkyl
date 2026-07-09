@@ -7,6 +7,9 @@ Bostadskalkyl är en helt statisk, mobile-first webbapp för att räkna på köp
 - fungerar offline efter första laddningen
 - ingen backend, inget konto och ingen serverlagring
 - flera kalkyler i `localStorage`
+- snabbvy + stegvis formelförklaring för varje nyckeltal
+- redigerbara antaganden (kontantinsats, lagfart, pantbrev, mäklarregel)
+- prisreglage, kontantinsatsreglage och läge för att utforska möjliga prisnivåer
 - dela aktivt scenario via komprimerad URL-hash
 - export/import av `calc.json`
 - mobilförst layout utan horisontell scroll

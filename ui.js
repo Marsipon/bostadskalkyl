@@ -1,5 +1,13 @@
 import { APP_NAME } from './constants.js';
-import { escapeHtml, formatCurrency, formatDateTime, formatIntegerInput, formatLoanToValue, formatPercentInput } from './utils.js';
+import {
+  escapeHtml,
+  formatCurrency,
+  formatDateTime,
+  formatIntegerInput,
+  formatLoanToValue,
+  formatPercent,
+  formatPercentInput
+} from './utils.js';
 
 function renderMetric(label, value) {
   return `
@@ -34,7 +42,7 @@ function renderField({ id, label, value, hint = '', field, inputMode = 'numeric'
   `;
 }
 
-function renderPercentField({ id, label, value, field, hint = '' }) {
+function renderPercentField({ id, label, value, field, hint = '', className = 'js-percent-input' }) {
   const safeId = escapeHtml(id);
   const safeHintId = `${safeId}-hint`;
 
@@ -43,7 +51,7 @@ function renderPercentField({ id, label, value, field, hint = '' }) {
       <span class="field__label">${escapeHtml(label)}</span>
       <div class="field__percent-wrap">
         <input
-          class="field__input js-percent-input"
+          class="field__input ${escapeHtml(className)}"
           id="${safeId}"
           name="${safeId}"
           type="text"
@@ -91,6 +99,94 @@ function renderLoans(loans) {
   `).join('');
 }
 
+function formatExplanationValue(step, input) {
+  if (input.unit === '%') {
+    return formatPercent(input.value);
+  }
+
+  if (step.id === 'loanToValue' && input.name !== 'Pris') {
+    return formatCurrency(input.value);
+  }
+
+  return formatCurrency(input.value);
+}
+
+
+function formatAssumptionValue(assumption) {
+  if (typeof assumption.value === 'string') {
+    return escapeHtml(assumption.value);
+  }
+
+  if (assumption.unit === '%') {
+    return formatPercent(assumption.value);
+  }
+
+  return formatCurrency(assumption.value);
+}
+
+function renderExplanationStep(step) {
+  const value = step.id === 'loanToValue' ? formatLoanToValue(step.value) : formatCurrency(step.value);
+  const assumptions = step.assumptions?.length
+    ? `
+      <ul class="explanation-list">
+        ${step.assumptions.map((assumption) => `
+          <li><strong>${escapeHtml(assumption.label)}</strong>: ${formatAssumptionValue(assumption)}</li>
+        `).join('')}
+      </ul>
+    `
+    : '<p class="section-copy">Inga extra antaganden för detta steg.</p>';
+
+  return `
+    <details class="details explanation-step">
+      <summary>
+        <span>${escapeHtml(step.title)}</span>
+        <strong>${value}</strong>
+      </summary>
+      <p class="section-copy"><strong>Formel:</strong> ${escapeHtml(step.formula)}</p>
+      <p class="section-copy">Så räknades det ut:</p>
+      <ul class="explanation-list">
+        ${step.inputs.map((input) => `
+          <li>
+            <span>${escapeHtml(input.operator || '=')} ${escapeHtml(input.name)}</span>
+            <strong>${formatExplanationValue(step, input)}</strong>
+          </li>
+        `).join('')}
+        <li class="explanation-list__result">
+          <span>= ${escapeHtml(step.resultLabel)}</span>
+          <strong>${value}</strong>
+        </li>
+      </ul>
+      <p class="section-copy">Källa/antagande:</p>
+      ${assumptions}
+    </details>
+  `;
+}
+
+function renderPriceExplore(results) {
+  const items = results.priceExplore?.samples ?? [];
+  if (!items.length) {
+    return '';
+  }
+
+  return `
+    <section class="card" aria-labelledby="price-explore-heading">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" id="price-explore-heading">Utforska pris</h2>
+          <p class="section-copy">Vilket pris klarar du med nuvarande antaganden?</p>
+        </div>
+      </div>
+      <div class="field__hint">Intervall: ${formatCurrency(results.priceExplore.min)} – ${formatCurrency(results.priceExplore.max)}</div>
+      <dl class="metric-list">
+        ${items.map((item) => renderMetric(
+          `${item.statusIcon} ${formatCurrency(item.price)}`,
+          item.status === 'short' ? `${item.statusLabel} (${formatCurrency(item.capitalMissing)} saknas)` : `${item.statusLabel} (${formatCurrency(item.capitalSurplus)} kvar)`
+        )).join('')}
+      </dl>
+    </section>
+  `;
+}
+
 export function renderResultPanel(results) {
   const statusText = results.status === 'short'
     ? 'Du saknar kapital'
@@ -106,28 +202,20 @@ export function renderResultPanel(results) {
       ? `Affären går ihop med ungefär ${amountText} kvar som marginal.`
       : `Du får ungefär ${amountText} över efter affären.`;
 
+  const chain = results.explanation?.chain ?? [];
+  const steps = results.explanation?.steps ?? {};
+
   return `
     <section class="card result-card result-card--${results.status}" data-role="result-panel" aria-labelledby="result-heading">
-      <div class="result-card__badge">Resultat</div>
+      <div class="result-card__badge">Snabbvy: Har jag råd?</div>
       <h2 class="section-title" id="result-heading">${statusText}</h2>
       <p class="result-card__amount">${amountText}</p>
       <p class="result-card__body">${bodyText}</p>
-      <details class="details">
-        <summary>Visa detaljer</summary>
-        <dl class="metric-list">
-          ${renderMetric('Likvid efter försäljning', formatCurrency(results.saleProceeds))}
-          ${renderMetric('Eget kapital', formatCurrency(results.equity))}
-          ${renderMetric('Totalt bolån idag', formatCurrency(results.totalMortgage))}
-          ${renderMetric('Nytt bolån', formatCurrency(results.requiredLoan))}
-          ${renderMetric('Belåningsgrad', formatLoanToValue(results.loanToValue))}
-          ${renderMetric('Kontantinsats (15 %)', formatCurrency(results.downPayment))}
-          ${renderMetric('Kapital som krävs', formatCurrency(results.requiredOwnCash))}
-          ${renderMetric('Lagfart', formatCurrency(results.stampDuty))}
-          ${renderMetric('Nya pantbrev', formatCurrency(results.pantbrev.newDeeds))}
-          ${renderMetric('Pantbrevskostnad', formatCurrency(results.pantbrev.cost))}
-          ${renderMetric('Mäklararvode', formatCurrency(results.brokerFee))}
-          ${renderMetric('Totalkostnad för nya bostaden', formatCurrency(results.totalCost))}
-        </dl>
+      <details class="details" open>
+        <summary>Förklaring: Hur räknade den fram det?</summary>
+        <div class="explanation-chain">
+          ${chain.map((stepId) => (steps[stepId] ? renderExplanationStep(steps[stepId]) : '')).join('')}
+        </div>
       </details>
     </section>
   `;
@@ -135,6 +223,9 @@ export function renderResultPanel(results) {
 
 export function renderApp({ calculations, activeCalculation, results, shareUrl }) {
   const activeState = activeCalculation.state;
+  const assumptions = activeState.assumptions;
+  const priceSliderMin = results.priceExplore?.min ?? 0;
+  const priceSliderMax = results.priceExplore?.max ?? Math.max(priceSliderMin + 1, activeState.newHome.price || 1);
 
   return `
     <div class="app-shell">
@@ -179,7 +270,6 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
           <div class="field-stack">
             ${renderField({ id: 'market-value', label: 'Marknadsvärde', value: activeState.currentHome.marketValue, field: 'currentHome.marketValue' })}
             ${renderField({ id: 'purchase-price', label: 'Inköpspris (valfritt)', value: activeState.currentHome.purchasePrice, field: 'currentHome.purchasePrice' })}
-            ${renderPercentField({ id: 'broker-fee', label: 'Mäklararvode', value: activeState.currentHome.brokerFeePercent, field: 'currentHome.brokerFeePercent', hint: 'Procentsats av försäljningspriset.' })}
           </div>
           <div class="section-header section-header--tight">
             <h3 class="subsection-title">Bolån</h3>
@@ -200,11 +290,64 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
           </div>
           <div class="field-stack">
             ${renderField({ id: 'new-price', label: 'Pris', value: activeState.newHome.price, field: 'newHome.price' })}
+            <label class="field" for="new-price-slider">
+              <span class="field__label">Prisreglage</span>
+              <input
+                class="field__range js-range-input"
+                id="new-price-slider"
+                type="range"
+                min="${priceSliderMin}"
+                max="${priceSliderMax}"
+                step="10000"
+                value="${Math.min(Math.max(activeState.newHome.price || priceSliderMin, priceSliderMin), priceSliderMax)}"
+                data-field="newHome.price"
+              >
+              <span class="field__hint">${formatCurrency(priceSliderMin)} – ${formatCurrency(priceSliderMax)}</span>
+            </label>
             ${renderField({ id: 'existing-deeds', label: 'Befintliga pantbrev', value: activeState.newHome.existingDeeds, field: 'newHome.existingDeeds' })}
             ${renderField({ id: 'renovation-cost', label: 'Renoveringskostnad', value: activeState.newHome.renovationCost, field: 'newHome.renovationCost' })}
             ${renderField({ id: 'other-costs', label: 'Övriga kostnader', value: activeState.newHome.otherCosts, field: 'newHome.otherCosts' })}
           </div>
         </section>
+
+        <section class="card" aria-labelledby="assumptions-heading">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title" id="assumptions-heading">Antaganden</h2>
+              <p class="section-copy">Justera antaganden och se effekten direkt.</p>
+            </div>
+          </div>
+          <div class="field-stack">
+            ${renderPercentField({ id: 'down-payment-percent', label: 'Kontantinsats', value: assumptions.downPaymentPercent, field: 'assumptions.downPaymentPercent' })}
+            <label class="field" for="down-payment-slider">
+              <span class="field__label">Kontantinsats-reglage (15–30 %)</span>
+              <input
+                class="field__range js-percent-range"
+                id="down-payment-slider"
+                type="range"
+                min="15"
+                max="30"
+                step="0.5"
+                value="${Math.min(Math.max(assumptions.downPaymentPercent, 15), 30)}"
+                data-field="assumptions.downPaymentPercent"
+              >
+            </label>
+            ${renderPercentField({ id: 'stamp-duty-percent', label: 'Lagfart', value: assumptions.stampDutyPercent, field: 'assumptions.stampDutyPercent' })}
+            ${renderPercentField({ id: 'deed-percent', label: 'Pantbrev', value: assumptions.deedPercent, field: 'assumptions.deedPercent' })}
+            <label class="field" for="broker-mode">
+              <span class="field__label">Mäklararvode: regel</span>
+              <select class="field__input field__input--select" id="broker-mode" data-field="assumptions.brokerFeeMode" data-kind="string">
+                <option value="percent" ${assumptions.brokerFeeMode === 'percent' ? 'selected' : ''}>Procent av försäljningspris</option>
+                <option value="fixed" ${assumptions.brokerFeeMode === 'fixed' ? 'selected' : ''}>Fast belopp</option>
+              </select>
+            </label>
+            ${assumptions.brokerFeeMode === 'fixed'
+              ? renderField({ id: 'broker-fee-fixed', label: 'Mäklararvode (kr)', value: assumptions.brokerFeeFixed, field: 'assumptions.brokerFeeFixed' })
+              : renderPercentField({ id: 'broker-fee-percent', label: 'Mäklararvode (%)', value: assumptions.brokerFeePercent, field: 'assumptions.brokerFeePercent' })}
+          </div>
+        </section>
+
+        ${renderPriceExplore(results)}
 
         <section class="card" aria-labelledby="share-heading">
           <div class="section-header">
