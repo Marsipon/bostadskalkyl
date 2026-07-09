@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title>Bostadskalkyl</title>
+  <rect width="128" height="128" rx="28" fill="#0f172a"/>
+  <path d="M28 58 64 30l36 28v40a10 10 0 0 1-10 10H38a10 10 0 0 1-10-10V58Z" fill="#dbeafe"/>
+  <path d="M48 104V72h32v32" fill="#1d4ed8"/>
+  <path d="M46 50h36v10H46zM46 66h24v10H46z" fill="#0f172a" opacity="0.12"/>
+</svg>
