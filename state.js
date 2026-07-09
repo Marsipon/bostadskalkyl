@@ -1,4 +1,12 @@
-import { DEFAULT_BROKER_FEE_RATE, STORAGE_VERSION } from './constants.js';
+import {
+  DEFAULT_BROKER_FEE_FIXED,
+  DEFAULT_BROKER_FEE_MODE,
+  DEFAULT_BROKER_FEE_RATE,
+  DEFAULT_DEED_PERCENT,
+  DEFAULT_DOWN_PAYMENT_PERCENT,
+  DEFAULT_STAMP_DUTY_PERCENT,
+  STORAGE_VERSION
+} from './constants.js';
 import { createId } from './utils.js';
 
 function now() {
@@ -11,6 +19,21 @@ function clone(value) {
   }
 
   return JSON.parse(JSON.stringify(value));
+}
+
+function sanitizeBrokerFeeMode(value) {
+  return value === 'fixed' ? 'fixed' : 'percent';
+}
+
+function createDefaultAssumptions() {
+  return {
+    downPaymentPercent: DEFAULT_DOWN_PAYMENT_PERCENT,
+    stampDutyPercent: DEFAULT_STAMP_DUTY_PERCENT,
+    deedPercent: DEFAULT_DEED_PERCENT,
+    brokerFeeMode: DEFAULT_BROKER_FEE_MODE,
+    brokerFeePercent: DEFAULT_BROKER_FEE_RATE,
+    brokerFeeFixed: DEFAULT_BROKER_FEE_FIXED
+  };
 }
 
 export function createEmptyState() {
@@ -26,7 +49,8 @@ export function createEmptyState() {
       existingDeeds: 0,
       renovationCost: 0,
       otherCosts: 0
-    }
+    },
+    assumptions: createDefaultAssumptions()
   };
 }
 
@@ -69,6 +93,7 @@ export function ensureStore(store) {
 
         const currentHome = calculation.state?.currentHome ?? {};
         const newHome = calculation.state?.newHome ?? {};
+        const assumptions = calculation.state?.assumptions ?? {};
         safeCalculation.state.currentHome.marketValue = Number(currentHome.marketValue) || 0;
         safeCalculation.state.currentHome.purchasePrice = Number(currentHome.purchasePrice) || 0;
         safeCalculation.state.currentHome.brokerFeePercent = Number(currentHome.brokerFeePercent) || DEFAULT_BROKER_FEE_RATE;
@@ -79,6 +104,17 @@ export function ensureStore(store) {
         safeCalculation.state.newHome.existingDeeds = Number(newHome.existingDeeds) || 0;
         safeCalculation.state.newHome.renovationCost = Number(newHome.renovationCost) || 0;
         safeCalculation.state.newHome.otherCosts = Number(newHome.otherCosts) || 0;
+
+        safeCalculation.state.assumptions.downPaymentPercent = Number(assumptions.downPaymentPercent) || DEFAULT_DOWN_PAYMENT_PERCENT;
+        safeCalculation.state.assumptions.stampDutyPercent = Number(assumptions.stampDutyPercent) || DEFAULT_STAMP_DUTY_PERCENT;
+        safeCalculation.state.assumptions.deedPercent = Number(assumptions.deedPercent) || DEFAULT_DEED_PERCENT;
+        safeCalculation.state.assumptions.brokerFeeMode = sanitizeBrokerFeeMode(assumptions.brokerFeeMode);
+        safeCalculation.state.assumptions.brokerFeePercent = Number(assumptions.brokerFeePercent)
+          || safeCalculation.state.currentHome.brokerFeePercent
+          || DEFAULT_BROKER_FEE_RATE;
+        safeCalculation.state.assumptions.brokerFeeFixed = Number(assumptions.brokerFeeFixed) || DEFAULT_BROKER_FEE_FIXED;
+
+        safeCalculation.state.currentHome.brokerFeePercent = safeCalculation.state.assumptions.brokerFeePercent;
 
         return [safeCalculation.id, safeCalculation];
       })
@@ -112,6 +148,9 @@ function updateCalculation(store, calculationId, updater) {
   }
 
   updater(calculation);
+  if (calculation.state?.assumptions) {
+    calculation.state.currentHome.brokerFeePercent = calculation.state.assumptions.brokerFeePercent;
+  }
   calculation.updatedAt = now();
 
   return nextStore;
@@ -179,6 +218,9 @@ export function setActiveCalculation(store, calculationId) {
 
 export function updateField(store, calculationId, section, field, value) {
   return updateCalculation(store, calculationId, (calculation) => {
+    if (!calculation.state[section]) {
+      calculation.state[section] = {};
+    }
     calculation.state[section][field] = value;
   });
 }
