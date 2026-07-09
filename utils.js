@@ -142,7 +142,7 @@ export function downloadJson(filename, data) {
   anchor.click();
   setTimeout(() => {
     URL.revokeObjectURL(url);
-  }, 100);
+  }, 1000);
 }
 
 export function readTextFile(file) {

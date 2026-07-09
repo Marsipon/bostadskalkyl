@@ -149,7 +149,7 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl }
           <div class="section-header">
             <div>
               <h2 class="section-title" id="scenarios-heading">▼ Mina kalkyler</h2>
-              <p class="section-copy">Aktiv senast uppdaterad ${escapeHtml(formatDateTime(activeCalculation.updatedAt))}</p>
+              <p class="section-copy">Aktiv senast uppdaterades ${escapeHtml(formatDateTime(activeCalculation.updatedAt))}</p>
             </div>
           </div>
           <label class="field" for="active-calculation">
