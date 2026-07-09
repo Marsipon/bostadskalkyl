@@ -11,7 +11,7 @@ Bostadskalkyl är en interaktiv bostadsbyteskalkylator – en helt statisk, mobi
 - redigerbara antaganden (kontantinsats, lagfart, pantbrev, mäklarregel)
 - prisreglage, kontantinsatsreglage och läge för att utforska möjliga prisnivåer
 - dela aktivt scenario via komprimerad URL-hash
-- export/import av `calc.json`
+- export/import av `bostadskalkyl.json`
 - mobilförst layout utan horisontell scroll
 - rena beräkningsfunktioner i separata moduler
 
