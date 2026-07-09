@@ -390,7 +390,7 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl, 
           <div class="field-stack">
             ${renderPercentField({ id: 'down-payment-percent', label: 'Kontantinsats', value: assumptions.downPaymentPercent, field: 'assumptions.downPaymentPercent' })}
             <label class="field" for="down-payment-slider">
-              <span class="field__label">Kontantinsats-reglage (10–50 %)</span>
+              <span class="field__label">Kontantinsatsreglage (10–50 %)</span>
               <input
                 class="field__range js-percent-range"
                 id="down-payment-slider"
