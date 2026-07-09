@@ -36,7 +36,7 @@ npm test
 npm run build
 ```
 
-Öppna sedan `/home/runner/work/bostadskalkyl/bostadskalkyl/index.html` i en lokal server, till exempel:
+Öppna sedan `index.html` via en lokal server, till exempel:
 
 ```bash
 python -m http.server
