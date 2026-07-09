@@ -1,0 +1,33 @@
+{
+  "name": "bostadskalkyl",
+  "version": "1.0.0",
+  "description": "Mobilanpassad bostadskalkyl som fungerar helt i webbläsaren.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node --test",
+    "build": "npm run lint && npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Marsipon/bostadskalkyl.git"
+  },
+  "keywords": [
+    "housing",
+    "calculator",
+    "github-pages",
+    "offline"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Marsipon/bostadskalkyl/issues"
+  },
+  "homepage": "https://marsipon.github.io/bostadskalkyl/",
+  "dependencies": {
+    "lz-string": "^1.5.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.6.0"
+  }
+}
