@@ -59,7 +59,11 @@ export function createEmptyState() {
       renovationCost: 0,
       otherCosts: 0
     },
-    assumptions: createDefaultAssumptions()
+    assumptions: createDefaultAssumptions(),
+    goalMode: {
+      enabled: false,
+      targetCapital: 0
+    }
   };
 }
 
@@ -134,6 +138,13 @@ export function ensureStore(store) {
         safeCalculation.state.assumptions.brokerFeeFixed = Number(assumptions.brokerFeeFixed) || DEFAULT_BROKER_FEE_FIXED;
 
         safeCalculation.state.currentHome.brokerFeePercent = safeCalculation.state.assumptions.brokerFeePercent;
+
+        // Handle goalMode migration
+        const goalMode = calculation.state?.goalMode ?? {};
+        safeCalculation.state.goalMode = {
+          enabled: goalMode.enabled === true,
+          targetCapital: Number(goalMode.targetCapital) || 0
+        };
 
         return [safeCalculation.id, safeCalculation];
       })

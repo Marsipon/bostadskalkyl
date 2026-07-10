@@ -207,6 +207,14 @@ root.addEventListener('click', async (event) => {
         render();
         announce('En ny kalkyl skapades.');
         break;
+      case 'toggle-goal-mode': {
+        const currentGoalEnabled = activeCalculation.state.goalMode?.enabled || false;
+        store = updateField(store, activeCalculation.id, 'goalMode', 'enabled', !currentGoalEnabled);
+        schedulePersist();
+        render();
+        announce(!currentGoalEnabled ? 'Målläge aktiverat.' : 'Målläge inaktiverat.');
+        break;
+      }
       case 'rename-calculation': {
         const name = prompt('Nytt namn på kalkylen', activeCalculation.name);
         if (name !== null) {
@@ -329,6 +337,47 @@ root.addEventListener('input', (event) => {
 
   if (target.classList.contains('js-percent-range')) {
     updateValueField(target.dataset.field, parsePercentInput(target.value));
+  }
+});
+
+// Handle clicks on result values to show explanations
+root.addEventListener('click', (event) => {
+  const resultValue = event.target.closest('.result-value');
+  if (resultValue) {
+    event.preventDefault();
+    event.stopPropagation();
+    const resultId = resultValue.dataset.resultId;
+    const modal = root.querySelector(`[data-modal-for="${resultId}"]`);
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  // Handle modal close buttons
+  const closeButton = event.target.closest('.explanation-modal__close');
+  if (closeButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const modal = closeButton.closest('.explanation-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  // Close modal when clicking outside it (on the modal background)
+  const modal = event.target.closest('.explanation-modal');
+  if (modal && event.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+
+// Close modals on Escape key
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    const modals = root.querySelectorAll('.explanation-modal');
+    modals.forEach(modal => {
+      modal.style.display = 'none';
+    });
   }
 });
 

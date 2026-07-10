@@ -8,6 +8,7 @@ import {
   formatPercent,
   formatPercentInput
 } from './utils.js';
+import { renderClickableValue, renderExplanationModal, getExplanationForResult } from './explanations.js';
 
 function renderMetric(label, value) {
   return `
@@ -18,25 +19,103 @@ function renderMetric(label, value) {
   `;
 }
 
-function renderField({ id, label, value, hint = '', field, inputMode = 'numeric' }) {
+/**
+ * Clamp a value between min and max bounds.
+ * Returns max if value is undefined, then applies Math.min/Math.max.
+ */
+function clampValue(value, min, max) {
+  return Math.min(Math.max(value || 0, min), max);
+}
+
+function renderField({ id, label, value, hint = '', field, inputMode = 'numeric', sliderMin = null, sliderMax = null }) {
   const safeId = escapeHtml(id);
   const safeHintId = `${safeId}-hint`;
+  const hasSlider = sliderMin !== null && sliderMax !== null;
+
+  const sliderHtml = hasSlider
+    ? `
+      <input
+        class="field__slider js-slider-input"
+        type="range"
+        id="${safeId}-slider"
+        name="${safeId}-slider"
+        min="${sliderMin}"
+        max="${sliderMax}"
+        value="${clampValue(value, sliderMin, sliderMax)}"
+        data-field="${escapeHtml(field)}"
+        data-slider-mode="true"
+        aria-label="Slider för ${escapeHtml(label)}"
+      >
+    `
+    : '';
 
   return `
-    <label class="field" for="${safeId}">
+    <label class="field ${hasSlider ? 'field--with-slider' : ''}" for="${safeId}">
       <span class="field__label">${escapeHtml(label)}</span>
+      <div class="field__input-group">
+        <input
+          class="field__input js-number-input"
+          id="${safeId}"
+          name="${safeId}"
+          type="text"
+          inputmode="${inputMode}"
+          autocomplete="off"
+          placeholder="0"
+          value="${formatIntegerInput(value)}"
+          data-field="${escapeHtml(field)}"
+          aria-describedby="${hint ? safeHintId : ''}"
+        >
+        ${sliderHtml}
+      </div>
+      ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
+    </label>
+  `;
+}
+
+function renderPercentField({ id, label, value, field, hint = '', className = 'js-percent-input', sliderMin = null, sliderMax = null }) {
+  const safeId = escapeHtml(id);
+  const safeHintId = `${safeId}-hint`;
+  const hasSlider = sliderMin !== null && sliderMax !== null;
+
+  const sliderHtml = hasSlider
+    ? `
       <input
-        class="field__input js-number-input"
-        id="${safeId}"
-        name="${safeId}"
-        type="text"
-        inputmode="${inputMode}"
-        autocomplete="off"
-        placeholder="0"
-        value="${formatIntegerInput(value)}"
+        class="field__slider js-slider-input"
+        type="range"
+        id="${safeId}-slider"
+        name="${safeId}-slider"
+        min="${sliderMin}"
+        max="${sliderMax}"
+        step="0.5"
+        value="${clampValue(value, sliderMin, sliderMax)}"
         data-field="${escapeHtml(field)}"
-        aria-describedby="${hint ? safeHintId : ''}"
+        data-slider-mode="true"
+        aria-label="Slider för ${escapeHtml(label)}"
       >
+    `
+    : '';
+
+  return `
+    <label class="field ${hasSlider ? 'field--with-slider' : ''}" for="${safeId}">
+      <span class="field__label">${escapeHtml(label)}</span>
+      <div class="field__percent-wrap">
+        <div class="field__input-group">
+          <input
+            class="field__input ${escapeHtml(className)}"
+            id="${safeId}"
+            name="${safeId}"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="0"
+            value="${formatPercentInput(value)}"
+            data-field="${escapeHtml(field)}"
+            aria-describedby="${hint ? safeHintId : ''}"
+          >
+          ${sliderHtml}
+        </div>
+        <span class="field__suffix">%</span>
+      </div>
       ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
     </label>
   `;
@@ -60,33 +139,6 @@ function renderTextField({ id, label, value, field, type = 'text', hint = '' }) 
         data-kind="string"
         aria-describedby="${hint ? safeHintId : ''}"
       >
-      ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
-    </label>
-  `;
-}
-
-function renderPercentField({ id, label, value, field, hint = '', className = 'js-percent-input' }) {
-  const safeId = escapeHtml(id);
-  const safeHintId = `${safeId}-hint`;
-
-  return `
-    <label class="field" for="${safeId}">
-      <span class="field__label">${escapeHtml(label)}</span>
-      <div class="field__percent-wrap">
-        <input
-          class="field__input ${escapeHtml(className)}"
-          id="${safeId}"
-          name="${safeId}"
-          type="text"
-          inputmode="decimal"
-          autocomplete="off"
-          placeholder="0"
-          value="${formatPercentInput(value)}"
-          data-field="${escapeHtml(field)}"
-          aria-describedby="${hint ? safeHintId : ''}"
-        >
-        <span class="field__suffix">%</span>
-      </div>
       ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
     </label>
   `;
@@ -159,13 +211,27 @@ function renderExplanationStep(step) {
     `
     : '<p class="section-copy">Inga extra antaganden för detta steg.</p>';
 
+  const descriptionHtml = step.description
+    ? `<p class="section-copy"><em>${escapeHtml(step.description)}</em></p>`
+    : '';
+
+  const equationHtml = step.equation
+    ? `<p class="section-copy"><strong>Ekvation:</strong> <code>${escapeHtml(step.equation)}</code></p>`
+    : '';
+
+  const learnMoreHtml = step.learnMore
+    ? `<p class="section-copy"><strong>💡 Tips:</strong> ${escapeHtml(step.learnMore)}</p>`
+    : '';
+
   return `
     <details class="details explanation-step">
       <summary>
         <span>${escapeHtml(step.title)}</span>
         <strong>${value}</strong>
       </summary>
+      ${descriptionHtml}
       <p class="section-copy"><strong>Formel:</strong> ${escapeHtml(step.formula)}</p>
+      ${equationHtml}
       <p class="section-copy">Så räknades det ut:</p>
       <ul class="explanation-list">
         ${step.inputs.map((input) => `
@@ -181,6 +247,7 @@ function renderExplanationStep(step) {
       </ul>
       <p class="section-copy">Källa/antagande:</p>
       ${assumptions}
+      ${learnMoreHtml}
     </details>
   `;
 }
@@ -210,11 +277,221 @@ function renderPriceExplore(results) {
   `;
 }
 
+function renderGoalModeSection(activeState) {
+  const goalMode = activeState.goalMode || { enabled: false, targetCapital: 0 };
+  const goalEnabled = goalMode.enabled;
+
+  // Calculate backwards from goal if enabled
+  let maxPriceHtml = '';
+  if (goalEnabled && goalMode.targetCapital > 0) {
+    // NOTE: Calculation functions implemented (calculateMaxPriceFromGoal, calculateMinSalePriceFromGoal
+    // in calculations.js), but not yet integrated into main calculateScenario() flow.
+    // Needs: wire functions to results, add UI display fields, integrate with scenario results
+    maxPriceHtml = `
+      <div class="goal-mode__status">
+        <p><strong>🔄 Målläge: Integration i progress</strong></p>
+        <p>
+          Beräkningarna för detta läge implementeras just nu. 
+          Funktionen blir tillgänglig snart. Håll utkik!
+        </p>
+      </div>
+    `;
+  }
+
+  return `
+    <section class="card" aria-labelledby="goal-mode-heading">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" id="goal-mode-heading">🎯 Målläge (Jag vill ha X kvar) - Beta</h2>
+          <p class="section-copy">Arbeta baklänges från ett målbelopp i stället. (Integration pågår)</p>
+        </div>
+      </div>
+      <label class="field" for="goal-mode-toggle">
+        <span class="field__label">Aktivera målläge (experimentell)</span>
+        <input
+          id="goal-mode-toggle"
+          type="checkbox"
+          class="field__input checkbox--compact"
+          ${goalEnabled ? 'checked' : ''}
+          data-action="toggle-goal-mode"
+        >
+      </label>
+      ${goalEnabled ? `
+        <div class="field-stack">
+          ${renderField({ 
+            id: 'goal-target-capital', 
+            label: 'Målbeloppet (pengar kvar efter köp)', 
+            value: goalMode.targetCapital, 
+            field: 'goalMode.targetCapital',
+            hint: 'Hur mycket pengar vill du ha kvar efter att ha köpt och betalat för allt?'
+          })}
+        </div>
+        ${maxPriceHtml}
+      ` : ''}
+    </section>
+  `;
+}
+
+function renderWhySection(results) {
+  if (results.status === 'good') {
+    return '';
+  }
+
+  const missing = results.status === 'short' ? results.capitalMissing : 0;
+  const suggestions = [];
+
+  if (missing > 0) {
+    const downPaymentIncrease = missing / 0.15; // Rough estimate
+    const priceReduction = missing;
+
+    suggestions.push(
+      `Öka kontantinsatsen med ungefär ${formatCurrency(downPaymentIncrease)}`,
+      `Sänk köpeskillingen med ungefär ${formatCurrency(priceReduction)}`
+    );
+  }
+
+  return `
+    <details class="details why-section">
+      <summary>
+        <span>Varför fungerar inte affären? 🤔</span>
+      </summary>
+      <p class="section-copy">Du måste justera någon av dessa för att affären ska fungera:</p>
+      <ul class="explanation-list">
+        ${suggestions.map((suggestion) => `<li>${escapeHtml(suggestion)}</li>`).join('')}
+      </ul>
+      <p class="section-copy"><strong>Enkelt sagt:</strong></p>
+      <ul class="explanation-list">
+        <li>Sänk priset, eller</li>
+        <li>Öka din kontantinsats, eller</li>
+        <li>Få mer från försäljningen av din gamla bostad</li>
+      </ul>
+    </details>
+  `;
+}
+
+function renderMoneyFlowVisualization(results) {
+  // Create a simple money flow visualization
+  if (!results || (results.status === 'good' && !results.saleProceeds)) {
+    return '';
+  }
+
+  const steps = [
+    { label: 'Försäljning', value: results.salePrice, icon: '↓' },
+    { label: '- Bolån', value: -results.totalMortgage, icon: '↓' },
+    { label: '- Mäklare', value: -results.brokerFee, icon: '↓' },
+    { label: '= Likvid', value: results.saleProceeds, icon: '➜' },
+    { label: '', value: 0, icon: '' },
+    { label: 'Ny kontantinsats', value: results.downPayment, icon: '↓' },
+    { label: '- Lagfart', value: -results.stampDuty, icon: '↓' },
+    { label: '- Pantbrev', value: -results.pantbrev.cost, icon: '↓' },
+    { label: '= Kvar', value: results.capitalSurplus >= 0 ? results.capitalSurplus : results.capitalMissing, icon: '✓' }
+  ];
+
+  return `
+    <details class="details money-flow-section">
+      <summary>
+        <span>Pengarnas väg 💸</span>
+      </summary>
+      <div class="money-flow">
+        ${steps.map((step) => {
+          if (!step.label) return '<div class="money-flow__spacer"></div>';
+          return `
+            <div class="money-flow__step">
+              <span class="money-flow__icon">${escapeHtml(step.icon)}</span>
+              <span class="money-flow__label">${escapeHtml(step.label)}</span>
+              <span class="money-flow__value">${formatCurrency(step.value)}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </details>
+  `;
+}
+
+function renderCostBreakdownVisualization(results) {
+  if (!results.explanation?.steps?.totalCost) {
+    return '';
+  }
+
+  const totalCostStep = results.explanation.steps.totalCost;
+  const total = results.totalCost || 1;
+
+  // Calculate percentages
+  const items = totalCostStep.inputs.slice(0, 5).map((input) => ({
+    label: input.name,
+    value: input.value,
+    percent: Math.round((input.value / total) * 100)
+  }));
+
+  return `
+    <details class="details cost-breakdown-section">
+      <summary>
+        <span>Kostnadsfördelning 📊</span>
+      </summary>
+      <div class="cost-breakdown">
+        ${items.map((item) => `
+          <div class="cost-breakdown__item">
+            <div class="cost-breakdown__bar-container">
+              <span class="cost-breakdown__label">${escapeHtml(item.label)}</span>
+              <div class="cost-breakdown__bar-wrapper">
+                <div class="cost-breakdown__bar" style="width: ${item.percent}%;"></div>
+              </div>
+              <span class="cost-breakdown__value">${formatCurrency(item.value)} (${item.percent}%)</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `;
+}
+
+function renderCapitalDistributionVisualization(results) {
+  if (!results.newHome || results.newHome.price <= 0) {
+    return '';
+  }
+
+  const price = results.newHome.price || 1;
+  const downPayment = results.downPayment || 0;
+  const loanAmount = results.requiredLoan || 0;
+
+  const downPaymentPercent = Math.round((downPayment / price) * 100);
+  const loanPercent = Math.round((loanAmount / price) * 100);
+
+  return `
+    <details class="details distribution-section">
+      <summary>
+        <span>Finansieringsfördelning ▦</span>
+      </summary>
+      <div class="distribution">
+        <div class="distribution__visualization">
+          <div class="distribution__segment distribution__segment--down-payment" style="width: ${downPaymentPercent}%;">
+            <span class="distribution__label">${downPaymentPercent}%</span>
+          </div>
+          <div class="distribution__segment distribution__segment--loan" style="width: ${loanPercent}%;">
+            <span class="distribution__label">${loanPercent}%</span>
+          </div>
+        </div>
+        <div class="distribution__legend">
+          <div class="distribution__legend-item">
+            <span class="distribution__color distribution__color--down-payment"></span>
+            <span>Kontantinsats: ${formatCurrency(downPayment)}</span>
+          </div>
+          <div class="distribution__legend-item">
+            <span class="distribution__color distribution__color--loan"></span>
+            <span>Bolån: ${formatCurrency(loanAmount)}</span>
+          </div>
+        </div>
+      </div>
+    </details>
+  `;
+}
+
 export function renderResultPanel(results) {
   const statusText = results.status === 'short' ? '❌ NEJ' : '✅ JA';
   const amountText = results.status === 'short'
     ? formatCurrency(results.capitalMissing)
     : formatCurrency(results.capitalSurplus);
+  const amountValue = results.status === 'short' ? results.capitalMissing : results.capitalSurplus;
   const bodyText = results.status === 'short'
     ? `Du saknar ${amountText} för att hålla dig inom 85 % belåningsgrad.`
     : results.status === 'tight'
@@ -223,19 +500,38 @@ export function renderResultPanel(results) {
 
   const chain = results.explanation?.chain ?? [];
   const steps = results.explanation?.steps ?? {};
+  const whySection = renderWhySection(results);
+  const moneyFlowVisualization = renderMoneyFlowVisualization(results);
+  const costBreakdownVisualization = renderCostBreakdownVisualization(results);
+  const capitalDistributionVisualization = renderCapitalDistributionVisualization(results);
+
+  // Generate explanation modals for key results
+  const explanations = [
+    getExplanationForResult('capitalSurplus', results),
+    getExplanationForResult('downPayment', results),
+    getExplanationForResult('requiredLoan', results),
+    getExplanationForResult('totalCost', results)
+  ].filter(Boolean);
+
+  const modalsHtml = explanations.map(exp => renderExplanationModal(exp)).join('');
 
   return `
     <section class="card result-card result-card--${results.status}" data-role="result-panel" aria-labelledby="result-heading">
       <div class="result-card__badge">Kan du köpa?</div>
       <h2 class="section-title" id="result-heading">${statusText}</h2>
-      <p class="result-card__amount">${amountText}</p>
+      <p class="result-card__amount">${renderClickableValue(amountValue, 'capitalSurplus', 'result-card__amount')}</p>
       <p class="result-card__body">${bodyText}</p>
+      ${whySection}
+      ${capitalDistributionVisualization}
+      ${costBreakdownVisualization}
+      ${moneyFlowVisualization}
       <details class="details" open>
         <summary>Förklaring: Hur räknade den fram det?</summary>
         <div class="explanation-chain">
           ${chain.map((stepId) => (steps[stepId] ? renderExplanationStep(steps[stepId]) : '')).join('')}
         </div>
       </details>
+      ${modalsHtml}
     </section>
   `;
 }
@@ -379,6 +675,8 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl, 
             ${renderField({ id: 'other-costs', label: 'Övriga kostnader', value: activeState.newHome.otherCosts, field: 'newHome.otherCosts' })}
           </div>
         </section>
+
+        ${renderGoalModeSection(activeState)}
 
         <section class="card" aria-labelledby="assumptions-heading">
           <div class="section-header">
