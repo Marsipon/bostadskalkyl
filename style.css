@@ -25,7 +25,6 @@
 
 html {
   font-size: 16px;
-  -webkit-touch-callout: none;
 }
 
 body {
@@ -292,6 +291,7 @@ summary:focus {
   font-weight: 700;
   text-align: center;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;

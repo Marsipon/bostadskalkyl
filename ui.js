@@ -269,26 +269,22 @@ function renderPriceExplore(results) {
   `;
 }
 
-function renderGoalModeSection(activeState, results) {
+function renderGoalModeSection(activeState) {
   const goalMode = activeState.goalMode || { enabled: false, targetCapital: 0 };
   const goalEnabled = goalMode.enabled;
 
   // Calculate backwards from goal if enabled
   let maxPriceHtml = '';
   if (goalEnabled && goalMode.targetCapital > 0) {
-    // NOTE: These calculations would be computed in calculateScenario() when goal mode is fully implemented
+    // NOTE: Full goal mode calculation integration coming in next release
     // See: calculations.js::calculateMaxPriceFromGoal() and calculateMinSalePriceFromGoal()
-    // For now, these values are placeholders - actual integration to follow in next version
-    const maxPrice = results.goalMaxPrice || 0;
-    const minSalePrice = results.goalMinSalePrice || 0;
-
     maxPriceHtml = `
-      <div class="field__hint" style="background: rgba(34, 197, 94, 0.1); padding: 1rem; border-radius: 0.75rem; margin-top: 1rem;">
-        <p style="margin: 0 0 0.5rem 0;"><strong>Med målbelopp på ${formatCurrency(goalMode.targetCapital)} kan du:</strong></p>
-        <dl class="metric-list">
-          ${renderMetric('Köpa bostad för max', formatCurrency(maxPrice))}
-          ${renderMetric('Sälja din gamla för min', formatCurrency(minSalePrice))}
-        </dl>
+      <div class="field__hint" style="background: rgba(29, 78, 216, 0.1); padding: 1rem; border-radius: 0.75rem; margin-top: 1rem;">
+        <p style="margin: 0 0 0.5rem 0;"><strong>🔄 Målläge: Integration i progress</strong></p>
+        <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">
+          Beräkningarna för detta läge implementeras just nu. 
+          Funktionen blir tillgänglig snart. Håll utkik!
+        </p>
       </div>
     `;
   }
@@ -297,12 +293,12 @@ function renderGoalModeSection(activeState, results) {
     <section class="card" aria-labelledby="goal-mode-heading">
       <div class="section-header">
         <div>
-          <h2 class="section-title" id="goal-mode-heading">🎯 Målläge (Jag vill ha X kvar)</h2>
-          <p class="section-copy">Arbeta baklänges från ett målbelopp i stället.</p>
+          <h2 class="section-title" id="goal-mode-heading">🎯 Målläge (Jag vill ha X kvar) - Beta</h2>
+          <p class="section-copy">Arbeta baklänges från ett målbelopp i stället. (Integration pågår)</p>
         </div>
       </div>
       <label class="field" for="goal-mode-toggle">
-        <span class="field__label">Aktivera målläge</span>
+        <span class="field__label">Aktivera målläge (experimentell)</span>
         <input
           id="goal-mode-toggle"
           type="checkbox"
@@ -672,7 +668,7 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl, 
           </div>
         </section>
 
-        ${renderGoalModeSection(activeState, results)}
+        ${renderGoalModeSection(activeState)}
 
         <section class="card" aria-labelledby="assumptions-heading">
           <div class="section-header">

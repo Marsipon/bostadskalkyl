@@ -498,13 +498,13 @@ export function calculateScenario(state) {
  * @param {Object} params - Calculation parameters
  * @param {number} params.targetCapital - Desired remaining capital after purchase
  * @param {number} params.saleProceeds - Total cash available from current sale
- * @param {number} params.downPaymentPercent - Down payment percentage
- * @param {number} params.stampDutyPercent - Stamp duty percentage
- * @param {number} params.deedPercent - Deed percentage
- * @param {number} params.brokerFeeRate - Broker fee as decimal rate
+ * @param {number} params.downPaymentPercent - Down payment percentage (0-100)
+ * @param {number} params.stampDutyPercent - Stamp duty percentage (0-100)
+ * @param {number} params.deedPercent - Deed percentage (0-100)
+ * @param {number} params.brokerFeePercent - Broker fee percentage (0-100)
  * @returns {number} Maximum house price affordable with target capital goal (0 if calculation invalid)
  */
-export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPaymentPercent, stampDutyPercent, deedPercent, brokerFeeRate }) {
+export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPaymentPercent, stampDutyPercent, deedPercent, brokerFeePercent }) {
   const downPaymentRate = toRate(downPaymentPercent, DOWN_PAYMENT_RATE);
   
   // Available capital for down payment and costs
@@ -512,7 +512,8 @@ export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPay
   // Solving for newPrice:
   // newPrice = (saleProceeds - existingMortgage - targetCapital) / (downPaymentRate + costRate)
   
-  const costRate = (stampDutyPercent / 100) + (deedPercent / 100) + (brokerFeeRate || 0);
+  // Convert all percentages to decimal rates
+  const costRate = (stampDutyPercent / 100) + (deedPercent / 100) + (brokerFeePercent / 100);
   const denominator = downPaymentRate + costRate;
   
   // Edge case: if denominator is 0 or negative, we cannot calculate a valid price
