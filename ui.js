@@ -159,13 +159,27 @@ function renderExplanationStep(step) {
     `
     : '<p class="section-copy">Inga extra antaganden för detta steg.</p>';
 
+  const descriptionHtml = step.description
+    ? `<p class="section-copy"><em>${escapeHtml(step.description)}</em></p>`
+    : '';
+
+  const equationHtml = step.equation
+    ? `<p class="section-copy"><strong>Ekvation:</strong> <code>${escapeHtml(step.equation)}</code></p>`
+    : '';
+
+  const learnMoreHtml = step.learnMore
+    ? `<p class="section-copy"><strong>💡 Tips:</strong> ${escapeHtml(step.learnMore)}</p>`
+    : '';
+
   return `
     <details class="details explanation-step">
       <summary>
         <span>${escapeHtml(step.title)}</span>
         <strong>${value}</strong>
       </summary>
+      ${descriptionHtml}
       <p class="section-copy"><strong>Formel:</strong> ${escapeHtml(step.formula)}</p>
+      ${equationHtml}
       <p class="section-copy">Så räknades det ut:</p>
       <ul class="explanation-list">
         ${step.inputs.map((input) => `
@@ -181,6 +195,7 @@ function renderExplanationStep(step) {
       </ul>
       <p class="section-copy">Källa/antagande:</p>
       ${assumptions}
+      ${learnMoreHtml}
     </details>
   `;
 }

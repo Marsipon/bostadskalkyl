@@ -30,7 +30,19 @@ function toRate(percent, fallbackRate) {
   return fallbackRate;
 }
 
-function createExplanation({ id, title, value, formula, inputs, assumptions = [], resultLabel = title }) {
+function createExplanation({
+  id,
+  title,
+  value,
+  formula,
+  inputs,
+  assumptions = [],
+  resultLabel = title,
+  description = '',
+  equation = '',
+  references = [],
+  learnMore = ''
+}) {
   return {
     id,
     title,
@@ -38,7 +50,11 @@ function createExplanation({ id, title, value, formula, inputs, assumptions = []
     formula,
     resultLabel,
     inputs,
-    assumptions
+    assumptions,
+    description,
+    equation,
+    references,
+    learnMore
   };
 }
 
@@ -246,48 +262,62 @@ export function calculatePurchasePlan({
       title: 'Kontantinsats',
       value: downPayment,
       formula: 'Pris × kontantinsats %',
+      equation: 'Pris × downPaymentPercent = Kontantinsats',
+      description: 'Kontantinsatsen är det egna kapital du måste sätta in för att köpa bostaden. Den beräknas som en procent av köpeskillingen.',
       inputs: [
         { name: 'Pris', value: normalizedPrice, operator: '=' },
         { name: 'Kontantinsats', value: downPaymentPercent, unit: '%', operator: '×' }
       ],
-      assumptions: [{ label: 'Kontantinsats', value: downPaymentPercent, unit: '%' }]
+      assumptions: [{ label: 'Kontantinsats', value: downPaymentPercent, unit: '%' }],
+      learnMore: 'Högre kontantinsats minskar belåningsgraden och kan ge bättre lånevillkor.'
     }),
     requiredOwnCash: createExplanation({
       id: 'requiredOwnCash',
       title: 'Krävt eget kapital',
       value: roundCurrency(requiredOwnCash),
       formula: 'Totalkostnad - maxlån (85 % av pris)',
+      equation: 'Totalkostnad - (Pris × 0.85) = Krävt eget kapital',
+      description: 'Det minsta eget kapital du behöver för att hålla dig inom 85% belåningsgrad.',
       inputs: [
         { name: 'Totalkostnad', value: totalCost, operator: '=' },
         { name: 'Maxlån', value: maxLoan, operator: '-' }
       ],
-      assumptions: [{ label: 'Max belåningsgrad', value: MAX_LOAN_TO_VALUE * 100, unit: '%' }]
+      assumptions: [{ label: 'Max belåningsgrad', value: MAX_LOAN_TO_VALUE * 100, unit: '%' }],
+      learnMore: 'Svenska banker lånar normalt inte mer än 85% av köpeskillingen utan extraordinär försäkring.'
     }),
     requiredLoan: createExplanation({
       id: 'requiredLoan',
       title: 'Nytt bolån',
       value: roundCurrency(requiredLoan),
       formula: 'Totalkostnad - likvid efter försäljning',
+      equation: 'Totalkostnad - Likvid = Nytt bolån',
+      description: 'Det totala belopp du behöver låna för att genomföra köpet.',
       inputs: [
         { name: 'Totalkostnad', value: totalCost, operator: '=' },
         { name: 'Likvid efter försäljning', value: normalizedSaleProceeds, operator: '-' }
-      ]
+      ],
+      learnMore: 'Detta är summan av alla kostnader minus det du får in från försäljningen av din nuvarande bostad.'
     }),
     loanToValue: createExplanation({
       id: 'loanToValue',
       title: 'Belåningsgrad',
       value: loanToValue,
       formula: 'Nytt bolån / pris',
+      equation: 'Nytt bolån / Pris = Belåningsgrad',
+      description: 'Visar hur stor del av köpeskillingen som är lånad. Långivare kräver ofta att denna ligger under 85%.',
       inputs: [
         { name: 'Nytt bolån', value: roundCurrency(requiredLoan), operator: '=' },
         { name: 'Pris', value: normalizedPrice, operator: '/' }
-      ]
+      ],
+      learnMore: 'En låg belåningsgrad är attraktivt för långivare och kan ge bättre räntevillkor.'
     }),
     totalCost: createExplanation({
       id: 'totalCost',
       title: 'Totalkostnad för ny bostad',
       value: totalCost,
       formula: 'Pris + renovering + övrigt + lagfart + pantbrev',
+      equation: 'Pris + Renovering + Övrigt + Lagfart + Pantbrev = Totalkostnad',
+      description: 'Alla kostnader förknippade med köpet av den nya bostaden.',
       inputs: [
         { name: 'Pris', value: normalizedPrice, operator: '=' },
         { name: 'Renovering', value: normalizedRenovationCost, operator: '+' },
@@ -298,7 +328,8 @@ export function calculatePurchasePlan({
       assumptions: [
         { label: 'Lagfart', value: stampDutyPercent, unit: '%' },
         { label: 'Pantbrev', value: deedPercent, unit: '%' }
-      ]
+      ],
+      learnMore: 'Inkluderar köpeskillingen plus alla utgifter för övergång av fastigheten.'
     })
   };
 
@@ -372,16 +403,21 @@ export function calculateScenario(state) {
       title: 'Eget kapital',
       value: equity,
       formula: 'Nuvarande bostadsvärde - bolån',
+      equation: 'Marknadsvärde - Totalt bolån = Eget kapital',
+      description: 'Det värde du äger av din nuvarande bostad efter att du betalar av dina lån.',
       inputs: [
         { name: 'Marknadsvärde', value: sanitizeNumber(currentHome.marketValue), operator: '=' },
         { name: 'Totalt bolån idag', value: totalMortgage, operator: '-' }
-      ]
+      ],
+      learnMore: 'Ditt eget kapital är skillnaden mellan vad bostaden är värd och vad du är skyldig på den.'
     }),
     saleProceeds: createExplanation({
       id: 'saleProceeds',
       title: 'Likvid efter försäljning',
       value: saleProceeds,
       formula: 'Försäljningspris - bolån - försäljningskostnader',
+      equation: 'Försäljningspris - Totalt bolån - Försäljningskostnader = Likvid',
+      description: 'Pengarna du får när du säljer din nuvarande bostad, efter att ha betalt av lånen och mäklararvoden.',
       inputs: [
         { name: 'Försäljningspris', value: salePrice, operator: '=' },
         { name: 'Totalt bolån idag', value: totalMortgage, operator: '-' },
@@ -391,13 +427,16 @@ export function calculateScenario(state) {
         brokerFeeMode === 'fixed'
           ? { label: 'Mäklararvode (fast)', value: brokerFeeFixed }
           : { label: 'Mäklararvode', value: brokerFeePercent, unit: '%' }
-      ]
+      ],
+      learnMore: 'Denna likvid kan du använda som eget kapital eller kontantinsats för att köpa en ny bostad.'
     }),
     saleCosts: createExplanation({
       id: 'saleCosts',
       title: 'Försäljningskostnader',
       value: saleCosts,
       formula: 'Mäklararvode + skatt + övriga försäljningskostnader',
+      equation: 'Mäklararvode + Skatt + Övriga kostnader = Försäljningskostnader',
+      description: 'Alla kostnader du måste betala när du säljer din nuvarande bostad.',
       inputs: [
         { name: 'Mäklararvode', value: brokerFee, operator: '=' },
         { name: 'Skatt', value: saleTax, operator: '+' },
@@ -407,20 +446,24 @@ export function calculateScenario(state) {
         brokerFeeMode === 'fixed'
           ? { label: 'Mäklararvode (fast)', value: brokerFeeFixed }
           : { label: 'Mäklararvode', value: brokerFeePercent, unit: '%' }
-      ]
+      ],
+      learnMore: 'Mäklaren tar normalt 2-3% av försäljningspriset, plus eventuell skatt på vinsten om den är stor.'
     }),
     brokerFee: createExplanation({
       id: 'brokerFee',
       title: 'Mäklararvode',
       value: brokerFee,
       formula: brokerFeeMode === 'fixed' ? 'Fast arvode' : 'Försäljningspris × mäklararvode %',
+      equation: brokerFeeMode === 'fixed' ? 'Fast belopp' : 'Försäljningspris × mäklararvode% = Mäklararvode',
+      description: 'Ersättning till fastighetsmäklaren för att sälja din nuvarande bostad.',
       inputs: brokerFeeMode === 'fixed'
         ? [{ name: 'Fast arvode', value: brokerFeeFixed, operator: '=' }]
         : [
           { name: 'Försäljningspris', value: salePrice, operator: '=' },
           { name: 'Mäklararvode', value: brokerFeePercent, unit: '%', operator: '×' }
         ],
-      assumptions: [{ label: 'Regel', value: brokerFeeMode === 'fixed' ? 'Fast belopp' : 'Procent av försäljningspris' }]
+      assumptions: [{ label: 'Regel', value: brokerFeeMode === 'fixed' ? 'Fast belopp' : 'Procent av försäljningspris' }],
+      learnMore: 'Du kan förhandla om mäklarens provision. De flesta tar 2-3% av försäljningspriset.'
     }),
     ...purchasePlan.explanations
   };
