@@ -305,35 +305,118 @@ function renderWhySection(results) {
   `;
 }
 
-function renderBreakdownSection(results) {
-  if (!results.explanation?.steps) {
+function renderMoneyFlowVisualization(results) {
+  // Create a simple money flow visualization
+  if (!results || results.status === 'good' && !results.saleProceeds) {
     return '';
   }
 
-  // Show breakdown of major costs
-  const totalCostStep = results.explanation.steps.totalCost;
-  const requiredLoanStep = results.explanation.steps.requiredLoan;
-
-  if (!totalCostStep || !requiredLoanStep) {
-    return '';
-  }
+  const steps = [
+    { label: 'Försäljning', value: results.salePrice, icon: '↓' },
+    { label: '- Bolån', value: -results.totalMortgage, icon: '↓' },
+    { label: '- Mäklare', value: -results.brokerFee, icon: '↓' },
+    { label: '= Likvid', value: results.saleProceeds, icon: '➜' },
+    { label: '', value: 0, icon: '' },
+    { label: 'Ny kontantinsats', value: results.downPayment, icon: '↓' },
+    { label: '- Lagfart', value: -results.stampDuty, icon: '↓' },
+    { label: '- Pantbrev', value: -results.pantbrev.cost, icon: '↓' },
+    { label: '= Kvar', value: results.capitalSurplus >= 0 ? results.capitalSurplus : results.capitalMissing, icon: '✓' }
+  ];
 
   return `
-    <details class="details breakdown-section">
+    <details class="details money-flow-section">
       <summary>
-        <span>Kostnadsuppdelning 📊</span>
+        <span>Pengarnas väg 💸</span>
       </summary>
-      <div class="breakdown-list">
-        <div class="breakdown-item">
-          <span>Köpeskilling</span>
-          <strong>${formatCurrency(results.explanation.steps.totalCost?.inputs[0]?.value || 0)}</strong>
-        </div>
-        ${results.explanation.steps.totalCost?.inputs.slice(1).map((input) => `
-          <div class="breakdown-item">
-            <span>${escapeHtml(input.name)}</span>
-            <strong>${formatCurrency(input.value)}</strong>
+      <div class="money-flow">
+        ${steps.map((step) => {
+          if (!step.label) return '<div class="money-flow__spacer"></div>';
+          return `
+            <div class="money-flow__step">
+              <span class="money-flow__icon">${escapeHtml(step.icon)}</span>
+              <span class="money-flow__label">${escapeHtml(step.label)}</span>
+              <span class="money-flow__value">${formatCurrency(step.value)}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </details>
+  `;
+}
+
+function renderCostBreakdownVisualization(results) {
+  if (!results.explanation?.steps?.totalCost) {
+    return '';
+  }
+
+  const totalCostStep = results.explanation.steps.totalCost;
+  const total = results.totalCost || 1;
+
+  // Calculate percentages
+  const items = totalCostStep.inputs.slice(0, 5).map((input) => ({
+    label: input.name,
+    value: input.value,
+    percent: Math.round((input.value / total) * 100)
+  }));
+
+  return `
+    <details class="details cost-breakdown-section">
+      <summary>
+        <span>Kostnadsfördelning 📊</span>
+      </summary>
+      <div class="cost-breakdown">
+        ${items.map((item) => `
+          <div class="cost-breakdown__item">
+            <div class="cost-breakdown__bar-container">
+              <span class="cost-breakdown__label">${escapeHtml(item.label)}</span>
+              <div class="cost-breakdown__bar-wrapper">
+                <div class="cost-breakdown__bar" style="width: ${item.percent}%;"></div>
+              </div>
+              <span class="cost-breakdown__value">${formatCurrency(item.value)} (${item.percent}%)</span>
+            </div>
           </div>
         `).join('')}
+      </div>
+    </details>
+  `;
+}
+
+function renderCapitalDistributionVisualization(results) {
+  if (!results.newHome || results.newHome.price <= 0) {
+    return '';
+  }
+
+  const price = results.newHome.price || 1;
+  const downPayment = results.downPayment || 0;
+  const loanAmount = results.requiredLoan || 0;
+
+  const downPaymentPercent = Math.round((downPayment / price) * 100);
+  const loanPercent = Math.round((loanAmount / price) * 100);
+
+  return `
+    <details class="details distribution-section">
+      <summary>
+        <span>Finansieringsfördelning ▦</span>
+      </summary>
+      <div class="distribution">
+        <div class="distribution__visualization">
+          <div class="distribution__segment distribution__segment--down-payment" style="width: ${downPaymentPercent}%;">
+            <span class="distribution__label">${downPaymentPercent}%</span>
+          </div>
+          <div class="distribution__segment distribution__segment--loan" style="width: ${loanPercent}%;">
+            <span class="distribution__label">${loanPercent}%</span>
+          </div>
+        </div>
+        <div class="distribution__legend">
+          <div class="distribution__legend-item">
+            <span class="distribution__color distribution__color--down-payment"></span>
+            <span>Kontantinsats: ${formatCurrency(downPayment)}</span>
+          </div>
+          <div class="distribution__legend-item">
+            <span class="distribution__color distribution__color--loan"></span>
+            <span>Bolån: ${formatCurrency(loanAmount)}</span>
+          </div>
+        </div>
       </div>
     </details>
   `;
@@ -353,7 +436,9 @@ export function renderResultPanel(results) {
   const chain = results.explanation?.chain ?? [];
   const steps = results.explanation?.steps ?? {};
   const whySection = renderWhySection(results);
-  const breakdownSection = renderBreakdownSection(results);
+  const moneyFlowVisualization = renderMoneyFlowVisualization(results);
+  const costBreakdownVisualization = renderCostBreakdownVisualization(results);
+  const capitalDistributionVisualization = renderCapitalDistributionVisualization(results);
 
   return `
     <section class="card result-card result-card--${results.status}" data-role="result-panel" aria-labelledby="result-heading">
@@ -362,7 +447,9 @@ export function renderResultPanel(results) {
       <p class="result-card__amount">${amountText}</p>
       <p class="result-card__body">${bodyText}</p>
       ${whySection}
-      ${breakdownSection}
+      ${capitalDistributionVisualization}
+      ${costBreakdownVisualization}
+      ${moneyFlowVisualization}
       <details class="details" open>
         <summary>Förklaring: Hur räknade den fram det?</summary>
         <div class="explanation-chain">
