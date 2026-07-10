@@ -111,7 +111,7 @@ Om du hittar en säkerhetssårbarhet:
 
 ### Använder vi CDNs?
 - **Ja** – GitHub Pages använder Fastly CDN
-  - Det är enkelt en cache, den körs inte JavaScript
+  - Det är endast en cache, den körs inte JavaScript
   - Kan inte läsa dina data
 
 ### Skickar vi något till servrar?

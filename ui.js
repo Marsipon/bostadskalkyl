@@ -19,6 +19,14 @@ function renderMetric(label, value) {
   `;
 }
 
+/**
+ * Clamp a value between min and max bounds.
+ * Returns max if value is undefined, then applies Math.min/Math.max.
+ */
+function clampValue(value, min, max) {
+  return Math.min(Math.max(value || 0, min), max);
+}
+
 function renderField({ id, label, value, hint = '', field, inputMode = 'numeric', sliderMin = null, sliderMax = null }) {
   const safeId = escapeHtml(id);
   const safeHintId = `${safeId}-hint`;
@@ -33,7 +41,7 @@ function renderField({ id, label, value, hint = '', field, inputMode = 'numeric'
         name="${safeId}-slider"
         min="${sliderMin}"
         max="${sliderMax}"
-        value="${Math.min(Math.max(value || 0, sliderMin), sliderMax)}"
+        value="${clampValue(value, sliderMin, sliderMax)}"
         data-field="${escapeHtml(field)}"
         data-slider-mode="true"
         aria-label="Slider för ${escapeHtml(label)}"
@@ -79,7 +87,7 @@ function renderPercentField({ id, label, value, field, hint = '', className = 'j
         min="${sliderMin}"
         max="${sliderMax}"
         step="0.5"
-        value="${Math.min(Math.max(value || 0, sliderMin), sliderMax)}"
+        value="${clampValue(value, sliderMin, sliderMax)}"
         data-field="${escapeHtml(field)}"
         data-slider-mode="true"
         aria-label="Slider för ${escapeHtml(label)}"
@@ -276,8 +284,9 @@ function renderGoalModeSection(activeState) {
   // Calculate backwards from goal if enabled
   let maxPriceHtml = '';
   if (goalEnabled && goalMode.targetCapital > 0) {
-    // NOTE: Full goal mode calculation integration coming in next release
-    // See: calculations.js::calculateMaxPriceFromGoal() and calculateMinSalePriceFromGoal()
+    // NOTE: Calculation functions implemented (calculateMaxPriceFromGoal, calculateMinSalePriceFromGoal
+    // in calculations.js), but not yet integrated into main calculateScenario() flow.
+    // Needs: wire functions to results, add UI display fields, integrate with scenario results
     maxPriceHtml = `
       <div class="field__hint" style="background: rgba(29, 78, 216, 0.1); padding: 1rem; border-radius: 0.75rem; margin-top: 1rem;">
         <p style="margin: 0 0 0.5rem 0;"><strong>🔄 Målläge: Integration i progress</strong></p>

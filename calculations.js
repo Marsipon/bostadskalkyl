@@ -491,9 +491,13 @@ export function calculateScenario(state) {
   };
 }
 
+
 /**
- * Calculate maximum house price given target capital remaining
- * Backwards calculation from goal
+ * Calculate maximum house price affordable given a goal remaining capital
+ * after selling old home and buying new one.
+ * 
+ * Broker fee for old home sale is already deducted from saleProceeds,
+ * so we only include purchase costs (stamp duty and deed) for the new home.
  * 
  * @param {Object} params - Calculation parameters
  * @param {number} params.targetCapital - Desired remaining capital after purchase
@@ -501,15 +505,7 @@ export function calculateScenario(state) {
  * @param {number} params.downPaymentPercent - Down payment percentage (0-100)
  * @param {number} params.stampDutyPercent - Stamp duty percentage (0-100)
  * @param {number} params.deedPercent - Deed percentage (0-100)
- * @param {number} params.brokerFeePercent - Broker fee percentage (0-100)
  * @returns {number} Maximum house price affordable with target capital goal (0 if calculation invalid)
- */
-/**
- * Calculate maximum house price affordable given a goal remaining capital
- * after selling old home and buying new one.
- * 
- * Broker fee for old home sale is already deducted from saleProceeds,
- * so we only include purchase costs (stamp duty and deed) for the new home.
  */
 export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPaymentPercent, stampDutyPercent, deedPercent }) {
   const downPaymentRate = toRate(downPaymentPercent, DOWN_PAYMENT_RATE);

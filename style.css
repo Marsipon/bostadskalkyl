@@ -834,10 +834,4 @@ summary:focus {
   .result-card__amount {
     font-size: clamp(1.5rem, 5vw, 2rem);
   }
-
-  input[type="number"],
-  input[type="text"],
-  select {
-    font-size: var(--font-size-input);
-  }
 }

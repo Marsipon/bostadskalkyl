@@ -350,11 +350,6 @@ root.addEventListener('click', (event) => {
     const modal = root.querySelector(`[data-modal-for="${resultId}"]`);
     if (modal) {
       modal.style.display = 'flex';
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          modal.style.display = 'none';
-        }
-      });
     }
   }
 
@@ -367,6 +362,12 @@ root.addEventListener('click', (event) => {
     if (modal) {
       modal.style.display = 'none';
     }
+  }
+
+  // Close modal when clicking outside it (on the modal background)
+  const modal = event.target.closest('.explanation-modal');
+  if (modal && event.target === modal) {
+    modal.style.display = 'none';
   }
 });
 
