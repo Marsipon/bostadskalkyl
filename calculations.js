@@ -504,7 +504,14 @@ export function calculateScenario(state) {
  * @param {number} params.brokerFeePercent - Broker fee percentage (0-100)
  * @returns {number} Maximum house price affordable with target capital goal (0 if calculation invalid)
  */
-export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPaymentPercent, stampDutyPercent, deedPercent, brokerFeePercent }) {
+/**
+ * Calculate maximum house price affordable given a goal remaining capital
+ * after selling old home and buying new one.
+ * 
+ * Broker fee for old home sale is already deducted from saleProceeds,
+ * so we only include purchase costs (stamp duty and deed) for the new home.
+ */
+export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPaymentPercent, stampDutyPercent, deedPercent }) {
   const downPaymentRate = toRate(downPaymentPercent, DOWN_PAYMENT_RATE);
   
   // Available capital for down payment and costs
@@ -513,7 +520,8 @@ export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPay
   // newPrice = (saleProceeds - existingMortgage - targetCapital) / (downPaymentRate + costRate)
   
   // Convert all percentages to decimal rates
-  const costRate = (stampDutyPercent / 100) + (deedPercent / 100) + (brokerFeePercent / 100);
+  // Note: brokerFee applies to OLD home sale (already in saleProceeds), not new purchase
+  const costRate = (stampDutyPercent / 100) + (deedPercent / 100);
   const denominator = downPaymentRate + costRate;
   
   // Edge case: if denominator is 0 or negative, we cannot calculate a valid price
@@ -530,11 +538,15 @@ export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPay
 
 /**
  * Calculate minimum sale price needed to reach goal
+ * 
+ * Formula: If you need X cash after paying broker fees:
+ *   salePrice * (1 - brokerFeeRate) = totalNeeded
+ *   salePrice = totalNeeded / (1 - brokerFeeRate)
  */
 export function calculateMinSalePriceFromGoal({ targetCapital, newDownPayment, totalCostsForNew, existingMortgage }) {
   // targetCapital = saleProceedsFromOld - brokerFeeOnSale - capitalGainsTax
-  // For simplicity: saleProceedsFromOld = old house sale price
-  // We need: salePrice - brokerFee - tax >= targetCapital + newDownPayment + newCosts + existingMortgage
+  // For simplicity: we estimate only broker fee, ignore tax
+  // We need: salePrice * (1 - brokerFeeRate) >= targetCapital + newDownPayment + newCosts + existingMortgage
   
   // Estimate: needed cash = target + new down payment + new costs + pay off existing
   const neededCash = targetCapital + newDownPayment + totalCostsForNew;
@@ -542,11 +554,11 @@ export function calculateMinSalePriceFromGoal({ targetCapital, newDownPayment, t
   // If we have existing mortgage to pay off, add it
   const totalNeeded = neededCash + existingMortgage;
   
-  // Assume broker fee of ~2% and minimal tax
+  // Typical broker fee for selling is ~2%
   const brokerFeeRate = 0.02;
-  const estimatedRate = 1 + brokerFeeRate; // Rough estimate
   
-  const minSalePrice = totalNeeded / estimatedRate;
+  // To get totalNeeded after paying broker fees: salePrice * (1 - 0.02) = totalNeeded
+  const minSalePrice = totalNeeded / (1 - brokerFeeRate);
   
   return roundCurrency(minSalePrice);
 }
