@@ -8,6 +8,7 @@ import {
   formatPercent,
   formatPercentInput
 } from './utils.js';
+import { renderClickableValue, renderExplanationModal, getExplanationForResult } from './explanations.js';
 
 function renderMetric(label, value) {
   return `
@@ -427,6 +428,7 @@ export function renderResultPanel(results) {
   const amountText = results.status === 'short'
     ? formatCurrency(results.capitalMissing)
     : formatCurrency(results.capitalSurplus);
+  const amountValue = results.status === 'short' ? results.capitalMissing : results.capitalSurplus;
   const bodyText = results.status === 'short'
     ? `Du saknar ${amountText} för att hålla dig inom 85 % belåningsgrad.`
     : results.status === 'tight'
@@ -440,11 +442,21 @@ export function renderResultPanel(results) {
   const costBreakdownVisualization = renderCostBreakdownVisualization(results);
   const capitalDistributionVisualization = renderCapitalDistributionVisualization(results);
 
+  // Generate explanation modals for key results
+  const explanations = [
+    getExplanationForResult('capitalSurplus', results),
+    getExplanationForResult('downPayment', results),
+    getExplanationForResult('requiredLoan', results),
+    getExplanationForResult('totalCost', results)
+  ].filter(Boolean);
+
+  const modalsHtml = explanations.map(exp => renderExplanationModal(exp)).join('');
+
   return `
     <section class="card result-card result-card--${results.status}" data-role="result-panel" aria-labelledby="result-heading">
       <div class="result-card__badge">Kan du köpa?</div>
       <h2 class="section-title" id="result-heading">${statusText}</h2>
-      <p class="result-card__amount">${amountText}</p>
+      <p class="result-card__amount">${renderClickableValue(amountValue, 'capitalSurplus', 'result-card__amount')}</p>
       <p class="result-card__body">${bodyText}</p>
       ${whySection}
       ${capitalDistributionVisualization}
@@ -456,6 +468,7 @@ export function renderResultPanel(results) {
           ${chain.map((stepId) => (steps[stepId] ? renderExplanationStep(steps[stepId]) : '')).join('')}
         </div>
       </details>
+      ${modalsHtml}
     </section>
   `;
 }

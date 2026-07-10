@@ -332,6 +332,46 @@ root.addEventListener('input', (event) => {
   }
 });
 
+// Handle clicks on result values to show explanations
+root.addEventListener('click', (event) => {
+  const resultValue = event.target.closest('.result-value');
+  if (resultValue) {
+    event.preventDefault();
+    event.stopPropagation();
+    const resultId = resultValue.dataset.resultId;
+    const modal = root.querySelector(`[data-modal-for="${resultId}"]`);
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    }
+  }
+
+  // Handle modal close buttons
+  const closeButton = event.target.closest('.explanation-modal__close');
+  if (closeButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const modal = closeButton.closest('.explanation-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+});
+
+// Close modals on Escape key
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    const modals = root.querySelectorAll('.explanation-modal');
+    modals.forEach(modal => {
+      modal.style.display = 'none';
+    });
+  }
+});
+
 window.addEventListener('pagehide', () => {
   flushPendingPersist();
 });
