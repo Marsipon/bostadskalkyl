@@ -72,7 +72,6 @@ input:focus,
 select:focus {
   outline: 3px solid rgba(29, 78, 216, 0.25);
   outline-offset: 2px;
-  font-size: var(--font-size-input);
 }
 
 button:focus,
@@ -817,6 +816,34 @@ summary:focus {
 .breadcrumb-navigation__separator {
   color: var(--text-muted);
   padding: 0 0.25rem;
+}
+
+/* Goal mode styles */
+
+.goal-mode__status {
+  background: rgba(29, 78, 216, 0.1);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  margin-top: 1rem;
+}
+
+.goal-mode__status p {
+  margin: 0;
+}
+
+.goal-mode__status p:first-child {
+  margin-bottom: 0.5rem;
+}
+
+.goal-mode__status p:last-child {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.checkbox--compact {
+  width: auto !important;
+  min-height: auto !important;
+  padding: 0.5rem !important;
 }
 
 /* Mobile optimizations for small screens */

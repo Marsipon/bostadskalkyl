@@ -288,9 +288,9 @@ function renderGoalModeSection(activeState) {
     // in calculations.js), but not yet integrated into main calculateScenario() flow.
     // Needs: wire functions to results, add UI display fields, integrate with scenario results
     maxPriceHtml = `
-      <div class="field__hint" style="background: rgba(29, 78, 216, 0.1); padding: 1rem; border-radius: 0.75rem; margin-top: 1rem;">
-        <p style="margin: 0 0 0.5rem 0;"><strong>🔄 Målläge: Integration i progress</strong></p>
-        <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">
+      <div class="goal-mode__status">
+        <p><strong>🔄 Målläge: Integration i progress</strong></p>
+        <p>
           Beräkningarna för detta läge implementeras just nu. 
           Funktionen blir tillgänglig snart. Håll utkik!
         </p>
@@ -311,8 +311,7 @@ function renderGoalModeSection(activeState) {
         <input
           id="goal-mode-toggle"
           type="checkbox"
-          class="field__input"
-          style="width: auto; min-height: auto; padding: 0.5rem;"
+          class="field__input checkbox--compact"
           ${goalEnabled ? 'checked' : ''}
           data-action="toggle-goal-mode"
         >

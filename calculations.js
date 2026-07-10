@@ -538,6 +538,8 @@ export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPay
  * Formula: If you need X cash after paying broker fees:
  *   salePrice * (1 - brokerFeeRate) = totalNeeded
  *   salePrice = totalNeeded / (1 - brokerFeeRate)
+ * 
+ * Returns 0 if broker fee rate is 100% or higher (invalid scenario)
  */
 export function calculateMinSalePriceFromGoal({ targetCapital, newDownPayment, totalCostsForNew, existingMortgage }) {
   // targetCapital = saleProceedsFromOld - brokerFeeOnSale - capitalGainsTax
@@ -552,9 +554,15 @@ export function calculateMinSalePriceFromGoal({ targetCapital, newDownPayment, t
   
   // Typical broker fee for selling is ~2%
   const brokerFeeRate = 0.02;
+  const feeDeduction = 1 - brokerFeeRate;
+  
+  // Prevent division by zero if fee rate is 100% or more (invalid scenario)
+  if (feeDeduction <= 0) {
+    return 0;
+  }
   
   // To get totalNeeded after paying broker fees: salePrice * (1 - 0.02) = totalNeeded
-  const minSalePrice = totalNeeded / (1 - brokerFeeRate);
+  const minSalePrice = totalNeeded / feeDeduction;
   
   return roundCurrency(minSalePrice);
 }
