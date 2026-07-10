@@ -269,6 +269,63 @@ function renderPriceExplore(results) {
   `;
 }
 
+function renderGoalModeSection(activeState, results) {
+  const goalMode = activeState.goalMode || { enabled: false, targetCapital: 0 };
+  const goalEnabled = goalMode.enabled;
+
+  // Calculate backwards from goal if enabled
+  let maxPriceHtml = '';
+  if (goalEnabled && goalMode.targetCapital > 0) {
+    // These would be calculated in the results object if goal mode is enabled
+    const maxPrice = results.goalMaxPrice || 0;
+    const minSalePrice = results.goalMinSalePrice || 0;
+
+    maxPriceHtml = `
+      <div class="field__hint" style="background: rgba(34, 197, 94, 0.1); padding: 1rem; border-radius: 0.75rem; margin-top: 1rem;">
+        <p style="margin: 0 0 0.5rem 0;"><strong>Med målbelopp på ${formatCurrency(goalMode.targetCapital)} kan du:</strong></p>
+        <dl class="metric-list">
+          ${renderMetric('Köpa bostad för max', formatCurrency(maxPrice))}
+          ${renderMetric('Sälja din gamla för min', formatCurrency(minSalePrice))}
+        </dl>
+      </div>
+    `;
+  }
+
+  return `
+    <section class="card" aria-labelledby="goal-mode-heading">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" id="goal-mode-heading">🎯 Målläge (Jag vill ha X kvar)</h2>
+          <p class="section-copy">Arbeta baklänges från ett målbelopp i stället.</p>
+        </div>
+      </div>
+      <label class="field" for="goal-mode-toggle">
+        <span class="field__label">Aktivera målläge</span>
+        <input
+          id="goal-mode-toggle"
+          type="checkbox"
+          class="field__input"
+          style="width: auto; min-height: auto; padding: 0.5rem;"
+          ${goalEnabled ? 'checked' : ''}
+          data-action="toggle-goal-mode"
+        >
+      </label>
+      ${goalEnabled ? `
+        <div class="field-stack">
+          ${renderField({ 
+            id: 'goal-target-capital', 
+            label: 'Målbeloppet (pengar kvar efter köp)', 
+            value: goalMode.targetCapital, 
+            field: 'goalMode.targetCapital',
+            hint: 'Hur mycket pengar vill du ha kvar efter att ha köpt och betalat för allt?'
+          })}
+        </div>
+        ${maxPriceHtml}
+      ` : ''}
+    </section>
+  `;
+}
+
 function renderWhySection(results) {
   if (results.status === 'good') {
     return '';
@@ -612,6 +669,8 @@ export function renderApp({ calculations, activeCalculation, results, shareUrl, 
             ${renderField({ id: 'other-costs', label: 'Övriga kostnader', value: activeState.newHome.otherCosts, field: 'newHome.otherCosts' })}
           </div>
         </section>
+
+        ${renderGoalModeSection(activeState, results)}
 
         <section class="card" aria-labelledby="assumptions-heading">
           <div class="section-header">

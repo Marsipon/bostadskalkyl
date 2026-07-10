@@ -490,3 +490,51 @@ export function calculateScenario(state) {
     }
   };
 }
+
+/**
+ * Calculate maximum house price given target capital remaining
+ * Backwards calculation from goal
+ */
+export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPaymentPercent, stampDutyPercent, deedPercent, brokerFeeRate }) {
+  const downPaymentRate = toRate(downPaymentPercent, DOWN_PAYMENT_RATE);
+  
+  // Available capital for down payment and costs
+  // targetCapital = saleProceeds - existingMortgage - totalCosts - (newPrice * downPaymentRate)
+  // Solving for newPrice:
+  // newPrice = (saleProceeds - existingMortgage - targetCapital) / (downPaymentRate + costRate)
+  
+  const costRate = (stampDutyPercent / 100) + (deedPercent / 100) + (brokerFeeRate || 0);
+  const denominator = downPaymentRate + costRate;
+  
+  if (denominator <= 0) {
+    return 0;
+  }
+  
+  const availableCapital = Math.max(0, saleProceeds - targetCapital);
+  const maxPrice = availableCapital / denominator;
+  
+  return roundCurrency(maxPrice);
+}
+
+/**
+ * Calculate minimum sale price needed to reach goal
+ */
+export function calculateMinSalePriceFromGoal({ targetCapital, newDownPayment, totalCostsForNew, existingMortgage }) {
+  // targetCapital = saleProceedsFromOld - brokerFeeOnSale - capitalGainsTax
+  // For simplicity: saleProceedsFromOld = old house sale price
+  // We need: salePrice - brokerFee - tax >= targetCapital + newDownPayment + newCosts + existingMortgage
+  
+  // Estimate: needed cash = target + new down payment + new costs + pay off existing
+  const neededCash = targetCapital + newDownPayment + totalCostsForNew;
+  
+  // If we have existing mortgage to pay off, add it
+  const totalNeeded = neededCash + existingMortgage;
+  
+  // Assume broker fee of ~2% and minimal tax
+  const brokerFeeRate = 0.02;
+  const estimatedRate = 1 + brokerFeeRate; // Rough estimate
+  
+  const minSalePrice = totalNeeded / estimatedRate;
+  
+  return roundCurrency(minSalePrice);
+}

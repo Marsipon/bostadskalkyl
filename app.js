@@ -207,6 +207,14 @@ root.addEventListener('click', async (event) => {
         render();
         announce('En ny kalkyl skapades.');
         break;
+      case 'toggle-goal-mode': {
+        const currentGoalEnabled = activeCalculation.state.goalMode?.enabled || false;
+        store = updateField(store, activeCalculation.id, 'goalMode', 'enabled', !currentGoalEnabled);
+        schedulePersist();
+        render();
+        announce(!currentGoalEnabled ? 'Målläge aktiverat.' : 'Målläge inaktiverat.');
+        break;
+      }
       case 'rename-calculation': {
         const name = prompt('Nytt namn på kalkylen', activeCalculation.name);
         if (name !== null) {
