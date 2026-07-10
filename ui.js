@@ -18,25 +18,95 @@ function renderMetric(label, value) {
   `;
 }
 
-function renderField({ id, label, value, hint = '', field, inputMode = 'numeric' }) {
+function renderField({ id, label, value, hint = '', field, inputMode = 'numeric', sliderMin = null, sliderMax = null }) {
   const safeId = escapeHtml(id);
   const safeHintId = `${safeId}-hint`;
+  const hasSlider = sliderMin !== null && sliderMax !== null;
+
+  const sliderHtml = hasSlider
+    ? `
+      <input
+        class="field__slider js-slider-input"
+        type="range"
+        id="${safeId}-slider"
+        name="${safeId}-slider"
+        min="${sliderMin}"
+        max="${sliderMax}"
+        value="${Math.min(Math.max(value || 0, sliderMin), sliderMax)}"
+        data-field="${escapeHtml(field)}"
+        data-slider-mode="true"
+        aria-label="Slider för ${escapeHtml(label)}"
+      >
+    `
+    : '';
 
   return `
-    <label class="field" for="${safeId}">
+    <label class="field ${hasSlider ? 'field--with-slider' : ''}" for="${safeId}">
       <span class="field__label">${escapeHtml(label)}</span>
+      <div class="field__input-group">
+        <input
+          class="field__input js-number-input"
+          id="${safeId}"
+          name="${safeId}"
+          type="text"
+          inputmode="${inputMode}"
+          autocomplete="off"
+          placeholder="0"
+          value="${formatIntegerInput(value)}"
+          data-field="${escapeHtml(field)}"
+          aria-describedby="${hint ? safeHintId : ''}"
+        >
+        ${sliderHtml}
+      </div>
+      ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
+    </label>
+  `;
+}
+
+function renderPercentField({ id, label, value, field, hint = '', className = 'js-percent-input', sliderMin = null, sliderMax = null }) {
+  const safeId = escapeHtml(id);
+  const safeHintId = `${safeId}-hint`;
+  const hasSlider = sliderMin !== null && sliderMax !== null;
+
+  const sliderHtml = hasSlider
+    ? `
       <input
-        class="field__input js-number-input"
-        id="${safeId}"
-        name="${safeId}"
-        type="text"
-        inputmode="${inputMode}"
-        autocomplete="off"
-        placeholder="0"
-        value="${formatIntegerInput(value)}"
+        class="field__slider js-slider-input"
+        type="range"
+        id="${safeId}-slider"
+        name="${safeId}-slider"
+        min="${sliderMin}"
+        max="${sliderMax}"
+        step="0.5"
+        value="${Math.min(Math.max(value || 0, sliderMin), sliderMax)}"
         data-field="${escapeHtml(field)}"
-        aria-describedby="${hint ? safeHintId : ''}"
+        data-slider-mode="true"
+        aria-label="Slider för ${escapeHtml(label)}"
       >
+    `
+    : '';
+
+  return `
+    <label class="field ${hasSlider ? 'field--with-slider' : ''}" for="${safeId}">
+      <span class="field__label">${escapeHtml(label)}</span>
+      <div class="field__percent-wrap">
+        <div class="field__input-group">
+          <input
+            class="field__input ${escapeHtml(className)}"
+            id="${safeId}"
+            name="${safeId}"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="0"
+            value="${formatPercentInput(value)}"
+            data-field="${escapeHtml(field)}"
+            aria-describedby="${hint ? safeHintId : ''}"
+          >
+          ${sliderHtml}
+        </div>
+        <span class="field__suffix">%</span>
+      </div>
       ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
     </label>
   `;
@@ -60,33 +130,6 @@ function renderTextField({ id, label, value, field, type = 'text', hint = '' }) 
         data-kind="string"
         aria-describedby="${hint ? safeHintId : ''}"
       >
-      ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
-    </label>
-  `;
-}
-
-function renderPercentField({ id, label, value, field, hint = '', className = 'js-percent-input' }) {
-  const safeId = escapeHtml(id);
-  const safeHintId = `${safeId}-hint`;
-
-  return `
-    <label class="field" for="${safeId}">
-      <span class="field__label">${escapeHtml(label)}</span>
-      <div class="field__percent-wrap">
-        <input
-          class="field__input ${escapeHtml(className)}"
-          id="${safeId}"
-          name="${safeId}"
-          type="text"
-          inputmode="decimal"
-          autocomplete="off"
-          placeholder="0"
-          value="${formatPercentInput(value)}"
-          data-field="${escapeHtml(field)}"
-          aria-describedby="${hint ? safeHintId : ''}"
-        >
-        <span class="field__suffix">%</span>
-      </div>
       ${hint ? `<span class="field__hint" id="${safeHintId}">${escapeHtml(hint)}</span>` : ''}
     </label>
   `;
@@ -225,6 +268,77 @@ function renderPriceExplore(results) {
   `;
 }
 
+function renderWhySection(results) {
+  if (results.status === 'good') {
+    return '';
+  }
+
+  const missing = results.status === 'short' ? results.capitalMissing : 0;
+  const suggestions = [];
+
+  if (missing > 0) {
+    const downPaymentIncrease = missing / 0.15; // Rough estimate
+    const priceReduction = missing;
+
+    suggestions.push(
+      `Öka kontantinsatsen med ungefär ${formatCurrency(downPaymentIncrease)}`,
+      `Sänk köpeskillingen med ungefär ${formatCurrency(priceReduction)}`
+    );
+  }
+
+  return `
+    <details class="details why-section">
+      <summary>
+        <span>Varför fungerar inte affären? 🤔</span>
+      </summary>
+      <p class="section-copy">Du måste justera någon av dessa för att affären ska fungera:</p>
+      <ul class="explanation-list">
+        ${suggestions.map((suggestion) => `<li>${escapeHtml(suggestion)}</li>`).join('')}
+      </ul>
+      <p class="section-copy"><strong>Enkelt sagt:</strong></p>
+      <ul class="explanation-list">
+        <li>Sänk priset, eller</li>
+        <li>Öka din kontantinsats, eller</li>
+        <li>Få mer från försäljningen av din gamla bostad</li>
+      </ul>
+    </details>
+  `;
+}
+
+function renderBreakdownSection(results) {
+  if (!results.explanation?.steps) {
+    return '';
+  }
+
+  // Show breakdown of major costs
+  const totalCostStep = results.explanation.steps.totalCost;
+  const requiredLoanStep = results.explanation.steps.requiredLoan;
+
+  if (!totalCostStep || !requiredLoanStep) {
+    return '';
+  }
+
+  return `
+    <details class="details breakdown-section">
+      <summary>
+        <span>Kostnadsuppdelning 📊</span>
+      </summary>
+      <div class="breakdown-list">
+        <div class="breakdown-item">
+          <span>Köpeskilling</span>
+          <strong>${formatCurrency(results.explanation.steps.totalCost?.inputs[0]?.value || 0)}</strong>
+        </div>
+        ${results.explanation.steps.totalCost?.inputs.slice(1).map((input) => `
+          <div class="breakdown-item">
+            <span>${escapeHtml(input.name)}</span>
+            <strong>${formatCurrency(input.value)}</strong>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `;
+}
+
 export function renderResultPanel(results) {
   const statusText = results.status === 'short' ? '❌ NEJ' : '✅ JA';
   const amountText = results.status === 'short'
@@ -238,6 +352,8 @@ export function renderResultPanel(results) {
 
   const chain = results.explanation?.chain ?? [];
   const steps = results.explanation?.steps ?? {};
+  const whySection = renderWhySection(results);
+  const breakdownSection = renderBreakdownSection(results);
 
   return `
     <section class="card result-card result-card--${results.status}" data-role="result-panel" aria-labelledby="result-heading">
@@ -245,6 +361,8 @@ export function renderResultPanel(results) {
       <h2 class="section-title" id="result-heading">${statusText}</h2>
       <p class="result-card__amount">${amountText}</p>
       <p class="result-card__body">${bodyText}</p>
+      ${whySection}
+      ${breakdownSection}
       <details class="details" open>
         <summary>Förklaring: Hur räknade den fram det?</summary>
         <div class="explanation-chain">
