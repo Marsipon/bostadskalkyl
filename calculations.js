@@ -494,6 +494,15 @@ export function calculateScenario(state) {
 /**
  * Calculate maximum house price given target capital remaining
  * Backwards calculation from goal
+ * 
+ * @param {Object} params - Calculation parameters
+ * @param {number} params.targetCapital - Desired remaining capital after purchase
+ * @param {number} params.saleProceeds - Total cash available from current sale
+ * @param {number} params.downPaymentPercent - Down payment percentage
+ * @param {number} params.stampDutyPercent - Stamp duty percentage
+ * @param {number} params.deedPercent - Deed percentage
+ * @param {number} params.brokerFeeRate - Broker fee as decimal rate
+ * @returns {number} Maximum house price affordable with target capital goal (0 if calculation invalid)
  */
 export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPaymentPercent, stampDutyPercent, deedPercent, brokerFeeRate }) {
   const downPaymentRate = toRate(downPaymentPercent, DOWN_PAYMENT_RATE);
@@ -506,6 +515,8 @@ export function calculateMaxPriceFromGoal({ targetCapital, saleProceeds, downPay
   const costRate = (stampDutyPercent / 100) + (deedPercent / 100) + (brokerFeeRate || 0);
   const denominator = downPaymentRate + costRate;
   
+  // Edge case: if denominator is 0 or negative, we cannot calculate a valid price
+  // Return 0 to indicate no valid purchase price can be calculated
   if (denominator <= 0) {
     return 0;
   }

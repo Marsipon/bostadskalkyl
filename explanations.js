@@ -2,6 +2,13 @@ import { formatCurrency, escapeHtml } from './utils.js';
 
 /**
  * Represents an explanation for a calculation result
+ * @param {string} resultId - Unique identifier for the result
+ * @param {string} title - Human-readable title of the result
+ * @param {string} formula - Formula description
+ * @param {Array} inputs - Array of calculation inputs
+ * @param {number} result - The calculated result value
+ * @param {string} description - Optional description of what this result means
+ * @returns {Object} Explanation object with all details
  */
 export function createResultExplanation(resultId, title, formula, inputs, result, description = '') {
   return {
@@ -16,6 +23,10 @@ export function createResultExplanation(resultId, title, formula, inputs, result
 
 /**
  * Renders clickable currency value
+ * @param {number} value - The currency value to display
+ * @param {string} resultId - Unique identifier for this result
+ * @param {string} className - Additional CSS class name
+ * @returns {string} HTML string for clickable value
  */
 export function renderClickableValue(value, resultId, className = '') {
   const formattedValue = formatCurrency(value);
@@ -34,6 +45,8 @@ export function renderClickableValue(value, resultId, className = '') {
 
 /**
  * Renders an explanation modal/popover
+ * @param {Object} explanation - The explanation object with formula and inputs
+ * @returns {string} HTML string for the explanation modal
  */
 export function renderExplanationModal(explanation) {
   const formulaHtml = `
@@ -88,6 +101,9 @@ function formatValueForExplanation(value) {
 
 /**
  * Get explanation for a specific result
+ * @param {string} resultId - The ID of the result to explain
+ * @param {Object} results - The full results object with calculation data
+ * @returns {Object|null} Explanation object or null if no explanation exists
  */
 export function getExplanationForResult(resultId, results) {
   // Map result IDs to their explanations

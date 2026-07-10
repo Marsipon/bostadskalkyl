@@ -276,7 +276,9 @@ function renderGoalModeSection(activeState, results) {
   // Calculate backwards from goal if enabled
   let maxPriceHtml = '';
   if (goalEnabled && goalMode.targetCapital > 0) {
-    // These would be calculated in the results object if goal mode is enabled
+    // NOTE: These calculations would be computed in calculateScenario() when goal mode is fully implemented
+    // See: calculations.js::calculateMaxPriceFromGoal() and calculateMinSalePriceFromGoal()
+    // For now, these values are placeholders - actual integration to follow in next version
     const maxPrice = results.goalMaxPrice || 0;
     const minSalePrice = results.goalMinSalePrice || 0;
 
@@ -365,7 +367,7 @@ function renderWhySection(results) {
 
 function renderMoneyFlowVisualization(results) {
   // Create a simple money flow visualization
-  if (!results || results.status === 'good' && !results.saleProceeds) {
+  if (!results || (results.status === 'good' && !results.saleProceeds)) {
     return '';
   }
 

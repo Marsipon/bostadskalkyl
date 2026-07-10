@@ -39,7 +39,7 @@ Om du hittar en säkerhetssårbarhet:
 
 ### ✅ Gör
 
-1. Kontakta oss privat via email: [security@example.com] *(lägg till kontakt)*
+1. Kontakta oss privat via [GitHub Security Advisory](https://github.com/Marsipon/bostadskalkyl/security/advisories)
 2. Beskriv sårbarheten tydligt
 3. Inklud steg för att reproducera
 4. Ge oss tid att fixa det innan du offentliggör det
@@ -121,9 +121,9 @@ Om du hittar en säkerhetssårbarhet:
 
 ## Kontakt
 
-För säkerhetsfrågor: [security@example.com] *(lägg till kontakt)*
+För säkerhetsfrågor, använd [GitHub Security Advisory](https://github.com/Marsipon/bostadskalkyl/security/advisories).
 
-För andra frågor: [support@example.com] eller öppna en [Discussion](https://github.com/Marsipon/bostadskalkyl/discussions)
+För andra frågor: öppna en [Discussion](https://github.com/Marsipon/bostadskalkyl/discussions)
 
 ---
 

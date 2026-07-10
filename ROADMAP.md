@@ -4,7 +4,7 @@ Här är vad vi planerar att arbeta på framöver. Ordningen kan förändras bas
 
 ## 🎯 Nästa (Q3 2025)
 
-### Klickbara tal och forkelhistorik
+### Klickbara tal och formelhistorik
 - [ ] Gör alla resultattal klickbara
 - [ ] Visa "varför?"-modal när man klickar
 - [ ] Visa stegvisa beräkningar

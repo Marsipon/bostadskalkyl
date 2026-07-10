@@ -27,7 +27,7 @@ Formatet baseras på [Keep a Changelog](https://keepachangelog.com/) och projekt
 - iOS Safari automatic zoom when focusing on input fields
 - Input font size now stays at 16px to prevent zoom
 
-## [1.0.0] - 2025-01-XX
+## [1.0.0] - 2026-07-10
 
 ### Added
 - Initial release
